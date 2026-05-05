@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"dashBoard2go/internal/config"
-	// "dashBoard2go/internal/oswrap"
+	"dashBoard2go/internal/updater"
 )
 
 func main() {
