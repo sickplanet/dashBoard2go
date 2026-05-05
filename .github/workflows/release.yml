@@ -11,6 +11,8 @@ permissions:
 jobs:
   build-test-release:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -55,6 +57,7 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-worker ./cmd/worker
           GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-watchdog ./cmd/watchdog
           GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-setup ./cmd/setup
+          GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-updater ./cmd/updater
           
           # Copy dependencies
           cp -r web output/dashBoard2go/web

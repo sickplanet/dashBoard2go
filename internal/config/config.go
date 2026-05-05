@@ -11,6 +11,8 @@ type PanelConfig struct {
 	Installed          bool   `json:"installed"`
 	PanelVersion       string `json:"panel_version"`
 	FQDN               string `json:"fqdn"`
+	NS1                string `json:"ns1"` // Primary Nameserver
+	NS2                string `json:"ns2"` // Secondary Nameserver
 	UseLetsEncryptFQDN bool   `json:"use_letsencrypt_fqdn"`
 	PanelPortHTTP      int    `json:"panel_port_http"`  // Typically 8080
 	PanelPortHTTPS     int    `json:"panel_port_https"` // Typically 8443

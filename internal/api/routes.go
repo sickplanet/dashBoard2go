@@ -116,7 +116,18 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, statuses)
 			})
 
-			// Create a unified Panel User (System Account + Base Directories)
+			
+admin.GET("/updates", func(c *gin.Context) {
+var update string
+err := db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
+if err != nil {
+c.JSON(200, gin.H{"update_available": ""})
+return
+}
+c.JSON(200, gin.H{"update_available": update})
+})
+
+// Create a unified Panel User (System Account + Base Directories)
 			admin.POST("/accounts", func(c *gin.Context) {
 				var req struct {
 					Username string `json:"username"`
@@ -141,7 +152,72 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 		}
 
-		// User Endpoints
+		
+// Admin Domains
+admin.GET("/domains", func(c *gin.Context) {
+rows, err := db.Query("SELECT id, username, domain, php_version, ssl_enabled FROM domains")
+if err != nil {
+c.JSON(200, gin.H{"domains": []interface{}{}})
+return
+}
+defer rows.Close()
+
+var results []map[string]interface{}
+for rows.Next() {
+var id int
+var username, domain, phpV string
+var ssl bool
+if err := rows.Scan(&id, &username, &domain, &phpV, &ssl); err == nil {
+results = append(results, map[string]interface{}{"id": id, "username": username, "domain": domain, "php_version": phpV, "ssl_enabled": ssl})
+}
+}
+if results == nil { results = []map[string]interface{}{} }
+c.JSON(200, gin.H{"domains": results})
+})
+
+// Admin Databases
+admin.GET("/databases", func(c *gin.Context) {
+rows, err := db.Query("SELECT id, username, db_name, db_user, db_host FROM databases")
+if err != nil {
+c.JSON(200, gin.H{"databases": []interface{}{}})
+return
+}
+defer rows.Close()
+
+var results []map[string]interface{}
+for rows.Next() {
+var id int
+var username, dbName, dbUser, dbHost string
+if err := rows.Scan(&id, &username, &dbName, &dbUser, &dbHost); err == nil {
+results = append(results, map[string]interface{}{"id": id, "username": username, "db_name": dbName, "db_user": dbUser, "db_host": dbHost})
+}
+}
+if results == nil { results = []map[string]interface{}{} }
+c.JSON(200, gin.H{"databases": results})
+})
+
+// Admin Emails
+admin.GET("/emails", func(c *gin.Context) {
+rows, err := db.Query("SELECT id, username, address, quota FROM mailboxes")
+if err != nil {
+c.JSON(200, gin.H{"emails": []interface{}{}})
+return
+}
+defer rows.Close()
+
+var results []map[string]interface{}
+for rows.Next() {
+var id, quota int
+var username, address string
+if err := rows.Scan(&id, &username, &address, &quota); err == nil {
+results = append(results, map[string]interface{}{"id": id, "username": username, "address": address, "quota": quota})
+}
+}
+if results == nil { results = []map[string]interface{}{} }
+c.JSON(200, gin.H{"emails": results})
+})
+
+// User Endpoints
 		user := apiGroup.Group("/user")
 		{
 			// Add Domain/Vhost
