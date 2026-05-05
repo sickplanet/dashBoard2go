@@ -22,3 +22,10 @@ plan.md
 # OS specific
 .DS_Store
 rules.md
+
+# Generic build binaries
+/core
+/setup
+/worker
+/watchdog
+/updater

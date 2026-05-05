@@ -216,6 +216,24 @@ func main() {
 		log.Println("If you are not running as root on Debian/Ubuntu, packages mock-failed.")
 	}
 
+	fmt.Println("Configuring Initial UFW Rules...")
+	// In a real environment, we'd invoke the UFW Wrapper, but a direct exec works just as well for setup.
+	exec.Command("ufw", "--force", "enable").Run()
+	exec.Command("ufw", "allow", "22/tcp").Run()
+	exec.Command("ufw", "allow", "53/tcp").Run() // DNS
+	exec.Command("ufw", "allow", "53/udp").Run() // DNS
+	exec.Command("ufw", "allow", "80/tcp").Run()
+	exec.Command("ufw", "allow", "443/tcp").Run()
+	exec.Command("ufw", "allow", "21/tcp").Run()
+	exec.Command("ufw", "allow", "25/tcp").Run()   // SMTP
+	exec.Command("ufw", "allow", "143/tcp").Run()  // IMAP
+	exec.Command("ufw", "allow", "465/tcp").Run()  // SMTPS
+	exec.Command("ufw", "allow", "587/tcp").Run()  // SMTP Submission
+	exec.Command("ufw", "allow", "993/tcp").Run()  // IMAPS
+	exec.Command("ufw", "allow", "995/tcp").Run()  // POP3S
+	exec.Command("ufw", "allow", "8080/tcp").Run() // Panel HTTP
+	exec.Command("ufw", "allow", "8443/tcp").Run() // Panel HTTPS
+
 	fmt.Println("[3/5] Configuring FQDN and AutoSSL...")
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
 
@@ -233,22 +251,9 @@ func main() {
 		}
 	}
 
-	fmt.Println("[4/5] Establishing Base Architectures & UFW Firewall...")
+	fmt.Println("[4/5] Establishing Base Architectures...")
 	os.MkdirAll("/home/dashboard2go/users", 0755)
 	os.MkdirAll("/var/lib/dashboard2go", 0755)
-
-	fmt.Println("Configuring Initial UFW Rules...")
-	// In a real environment, we'd invoke the UFW Wrapper, but a direct exec works just as well for setup.
-	exec.Command("ufw", "--force", "enable").Run()
-	exec.Command("ufw", "allow", "22/tcp").Run()
-	exec.Command("ufw", "allow", "80/tcp").Run()
-	exec.Command("ufw", "allow", "443/tcp").Run()
-	exec.Command("ufw", "allow", "21/tcp").Run()
-	exec.Command("ufw", "allow", "25/tcp").Run()
-	exec.Command("ufw", "allow", "143/tcp").Run()
-	exec.Command("ufw", "allow", "993/tcp").Run()
-	exec.Command("ufw", "allow", "8080/tcp").Run() // Panel HTTP
-	exec.Command("ufw", "allow", "8443/tcp").Run() // Panel HTTPS
 
 	fmt.Println("[5/5] Storing Configuration & Seeding Admin DB...")
 
