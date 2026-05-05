@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Area | dashBoard2go</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/style.css">
+    <style>
+        .alert-box { max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.1); padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .alert-box div { margin-bottom: 5px; border-left: 2px solid var(--danger-color); padding-left: 10px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <h2>Client Panel</h2>
+        <ul>
+            <li><a href="#" class="active">Domains & Vhosts</a></li>
+            <li><a href="#">FTP Accounts</a></li>
+            <li><a href="#">Mailboxes</a></li>
+            <li><a href="/admin">↳ Switch Admin</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <h1>Domain & Hosting Management</h1>
+            <div class="user-info">
+                <span>Logged in as: <strong>demo_user</strong></span>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- Add Domain Form -->
+            <div class="card">
+                <h3>Deploy New Domain</h3>
+                <form id="addDomainForm">
+                    <input type="text" id="domain" placeholder="example.com" required>
+                    <select id="engine">
+                        <option value="nginx">Nginx + PHP-FPM</option>
+                        <option value="apache2">Apache2 + FastCGI</option>
+                    </select>
+                    <input type="hidden" id="sysuser" value="demo_user">
+                    <button type="submit">Enqueue Vhost Build</button>
+                    <div id="domainResponse" style="margin-top: 15px; font-size: 14px;"></div>
+                </form>
+            </div>
+
+            <!-- Web & Server Log Alerts -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <h3>System Log Alerts</h3>
+                    <select id="alertPref" style="width: 120px; padding: 5px;" onchange="updateAlertLevel(this.value)">
+                        <option value="none">Disabled</option>
+                        <option value="errors" selected>Errors Only</option>
+                        <option value="warnings">Warnings Only</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
+                
+                <div class="alert-box" id="recentAlerts">
+                    <div style="border-color: var(--success-color);">Checking logs...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Form Submission mapping to Core API Job Queue -> Worker
+        document.getElementById('addDomainForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = "Queueing...";
+            
+            const payload = {
+                domain: document.getElementById('domain').value,
+                engine: document.getElementById('engine').value,
+                username: document.getElementById('sysuser').value
+            };
+
+            try {
+                const res = await fetch('/api/v1/user/vhost', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    document.getElementById('domainResponse').innerHTML = `<span style="color: var(--success-color)">Success! Job ID: ${data.job_id} processed by background worker.</span>`;
+                } else {
+                    document.getElementById('domainResponse').innerHTML = `<span style="color: var(--danger-color)">Error: ${data.error}</span>`;
+                }
+                
+                e.target.reset();
+            } catch (err) {
+                 document.getElementById('domainResponse').innerHTML = `<span style="color: var(--danger-color)">Failed to deploy vhost.</span>`;
+            }
+            btn.innerText = originalText;
+        });
+
+        // Async API to fetch alerts polled by watchdog from DB
+        async function fetchAlerts() {
+            try {
+                const res = await fetch('/api/v1/user/alerts');
+                const data = await res.json();
+                
+                let html = '';
+                if(data.alerts && data.alerts.length > 0) {
+                    data.alerts.forEach(msg => {
+                        let colorStr = msg.toLowerCase().includes('warn') ? "var(--warning-color)" : "var(--danger-color)";
+                        html += `<div style="border-color: ${colorStr}">${msg}</div>`;
+                    });
+                } else {
+                    html = '<div style="border-color: var(--success-color)">No active alerts found.</div>';
+                }
+                document.getElementById('recentAlerts').innerHTML = html;
+            } catch(e) {
+                console.error("Alerts sync failed.");
+            }
+        }
+
+        async function updateAlertLevel(level) {
+             await fetch('/api/v1/user/alerts/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: "demo_user", level: level})
+             });
+        }
+
+        fetchAlerts();
+        setInterval(fetchAlerts, 15000); // UI poll Watchdog alerts
+    </script>
+</body>
+</html>

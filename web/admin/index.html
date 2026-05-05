@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Area | dashBoard2go</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <h2>dashBoard2go</h2>
+        <ul>
+            <li><a href="#" class="active">Monitoring</a></li>
+            <li><a href="#">System Users</a></li>
+            <li><a href="#">System Config</a></li>
+            <li><a href="/user">↳ Switch to User</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <h1>Server Monitoring</h1>
+            <div class="user-info">
+                <span>Welcome, Root Admin</span>
+                <button onclick="toggleTheme()">Toggle Theme</button>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- Services Overview -->
+            <div class="card">
+                <h3>Stack Health Status</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicesList">
+                        <tr><td colspan="2">Loading services...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Global User Pool Creation Form -->
+            <div class="card">
+                <h3>Create System User</h3>
+                <form id="createUserForm">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <input type="password" id="password" placeholder="Password" required>
+                    <input type="number" id="quota" placeholder="Quota MB (0 for unlimited)" value="0">
+                    <button type="submit">Create Storage Sandbox</button>
+                </form>
+                <div id="userResponse" style="margin-top: 15px; font-size: 14px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Fetch Services from custom dashboard2go Core API
+        async function fetchServices() {
+            try {
+                const res = await fetch('/api/v1/admin/services');
+                const data = await res.json();
+                
+                let html = '';
+                data.forEach(srv => {
+                    const statusClass = srv.active ? 'active' : 'inactive';
+                    const statusText = srv.active ? 'ACTIVE' : 'OFFLINE';
+                    // We only want to show the underlying service name
+                    const sname = srv.service.split('.service')[0];
+
+                    html += `<tr>
+                        <td><strong>${sname}</strong></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    </tr>`;
+                });
+                document.getElementById('servicesList').innerHTML = html;
+            } catch (e) {
+                document.getElementById('servicesList').innerHTML = `<tr><td colspan="2" style="color:var(--danger-color)">API Connection Lost.</td></tr>`;
+            }
+        }
+
+        // Form Submit Handler
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = "Provisioning...";
+            
+            const payload = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                quota_mb: parseInt(document.getElementById('quota').value)
+            };
+
+            try {
+                const res = await fetch('/api/v1/admin/accounts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                document.getElementById('userResponse').innerHTML = `<span style="color: var(--success-color)">Success! Job ID: ${data.job_id} <br> Path: ${data.system_path}</span>`;
+                e.target.reset();
+            } catch (err) {
+                 document.getElementById('userResponse').innerHTML = `<span style="color: var(--danger-color)">Failed to inject into Job Queue.</span>`;
+            }
+            btn.innerText = "Create Storage Sandbox";
+        });
+
+        // Theme Toggle persistence
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', target);
+        }
+
+        fetchServices();
+        setInterval(fetchServices, 10000); // Polling for live stack health
+    </script>
+</body>
+</html>
