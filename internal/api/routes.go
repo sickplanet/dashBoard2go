@@ -116,7 +116,18 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, statuses)
 			})
 
-			// Create a unified Panel User (System Account + Base Directories)
+			
+admin.GET("/updates", func(c *gin.Context) {
+var update string
+err := db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
+if err != nil {
+c.JSON(200, gin.H{"update_available": ""})
+return
+}
+c.JSON(200, gin.H{"update_available": update})
+})
+
+// Create a unified Panel User (System Account + Base Directories)
 			admin.POST("/accounts", func(c *gin.Context) {
 				var req struct {
 					Username string `json:"username"`
