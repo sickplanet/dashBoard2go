@@ -24,7 +24,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			c.Redirect(http.StatusMovedPermanently, "/login")
 			return
 		}
-		
+
 		var isAdmin bool
 		err = db.QueryRow("SELECT is_admin FROM sessions JOIN panel_users ON sessions.username = panel_users.username WHERE sessions.token = ? AND sessions.expires_at > ?", sessionToken, time.Now()).Scan(&isAdmin)
 		if err != nil {
@@ -62,7 +62,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				var hash string
 				var isAdmin bool
 				err := db.QueryRow("SELECT password, is_admin FROM panel_users WHERE username = ?", req.Username).Scan(&hash, &isAdmin)
-				
+
 				if err == sql.ErrNoRows {
 					c.JSON(401, gin.H{"error": "Invalid username or password"})
 					return
@@ -85,7 +85,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 					username TEXT NOT NULL,
 					expires_at DATETIME NOT NULL
 				)`)
-				
+
 				_, err = db.Exec("INSERT INTO sessions (token, username, expires_at) VALUES (?, ?, ?)", sessionToken, req.Username, expiresAt)
 				if err != nil {
 					c.JSON(500, gin.H{"error": "Failed to create session"})
@@ -102,102 +102,102 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 		}
 
 		// Admin Endpoints
-admin := apiGroup.Group("/admin")
-{
-admin.GET("/status", func(c *gin.Context) {
-c.JSON(200, gin.H{"status": "Admin API OK"})
-})
-admin.GET("/services", func(c *gin.Context) {
-services := []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
-var statuses []map[string]interface{}
-for _, s := range services {
-statuses = append(statuses, oswrap.GetServiceStatus(s))
-}
-c.JSON(200, statuses)
-})
+		admin := apiGroup.Group("/admin")
+		{
+			admin.GET("/status", func(c *gin.Context) {
+				c.JSON(200, gin.H{"status": "Admin API OK"})
+			})
+			admin.GET("/services", func(c *gin.Context) {
+				services := []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
+				var statuses []map[string]interface{}
+				for _, s := range services {
+					statuses = append(statuses, oswrap.GetServiceStatus(s))
+				}
+				c.JSON(200, statuses)
+			})
 
-// Create a unified Panel User (System Account + Base Directories)
-admin.POST("/accounts", func(c *gin.Context) {
-var req struct {
-Username string `json:"username"`
-Password string `json:"password"`
-QuotaMB  int    `json:"quota_mb"`
-}
-if err := c.BindJSON(&req); err != nil {
-c.JSON(400, gin.H{"error": "Invalid JSON"})
-return
-}
+			// Create a unified Panel User (System Account + Base Directories)
+			admin.POST("/accounts", func(c *gin.Context) {
+				var req struct {
+					Username string `json:"username"`
+					Password string `json:"password"`
+					QuotaMB  int    `json:"quota_mb"`
+				}
+				if err := c.BindJSON(&req); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid JSON"})
+					return
+				}
 
-payload, _ := json.Marshal(req)
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-defer cancel()
+				payload, _ := json.Marshal(req)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
 
-jobID, err := q.Push(ctx, "CREATE_PANEL_USER", string(payload))
-if err != nil {
-c.JSON(500, gin.H{"error": "Failed to queue job"})
-return
-}
-c.JSON(201, gin.H{"message": "User creation queued", "job_id": jobID, "system_path": "/home/dashboard2go/users/" + req.Username})
-})
-}
+				jobID, err := q.Push(ctx, "CREATE_PANEL_USER", string(payload))
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Failed to queue job"})
+					return
+				}
+				c.JSON(201, gin.H{"message": "User creation queued", "job_id": jobID, "system_path": "/home/dashboard2go/users/" + req.Username})
+			})
+		}
 
-// User Endpoints
-user := apiGroup.Group("/user")
-{
-// Add Domain/Vhost
-user.POST("/vhost", func(c *gin.Context) {
-var req struct {
-Domain string `json:"domain"`
-Engine string `json:"engine"`
-Username string `json:"username"`
-}
-if err := c.BindJSON(&req); err != nil {
-c.JSON(400, gin.H{"error": "Invalid request"})
-return
-}
+		// User Endpoints
+		user := apiGroup.Group("/user")
+		{
+			// Add Domain/Vhost
+			user.POST("/vhost", func(c *gin.Context) {
+				var req struct {
+					Domain   string `json:"domain"`
+					Engine   string `json:"engine"`
+					Username string `json:"username"`
+				}
+				if err := c.BindJSON(&req); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid request"})
+					return
+				}
 
-payload, _ := json.Marshal(req)
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-defer cancel()
+				payload, _ := json.Marshal(req)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
 
-jobID, err := q.Push(ctx, "CREATE_VHOST", string(payload))
-if err != nil {
-c.JSON(500, gin.H{"error": "Queue error"})
-return
-}
-c.JSON(202, gin.H{"message": "Virtual host creation queued", "job_id": jobID})
-})
+				jobID, err := q.Push(ctx, "CREATE_VHOST", string(payload))
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Queue error"})
+					return
+				}
+				c.JSON(202, gin.H{"message": "Virtual host creation queued", "job_id": jobID})
+			})
 
-// Add FTP Account
-user.POST("/ftp", func(c *gin.Context) {
-var req struct {
-Username string `json:"username"`
-Password string `json:"password"`
-Quota    int    `json:"quota"`
-Dir      string `json:"dir"` 
-}
-if err := c.BindJSON(&req); err != nil {
-c.JSON(400, gin.H{"error": "Invalid JSON"})
-return
-}
-payload, _ := json.Marshal(req)
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-defer cancel()
+			// Add FTP Account
+			user.POST("/ftp", func(c *gin.Context) {
+				var req struct {
+					Username string `json:"username"`
+					Password string `json:"password"`
+					Quota    int    `json:"quota"`
+					Dir      string `json:"dir"`
+				}
+				if err := c.BindJSON(&req); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid JSON"})
+					return
+				}
+				payload, _ := json.Marshal(req)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
 
-jobID, err := q.Push(ctx, "ADD_FTP_USER", string(payload))
-if err != nil {
-c.JSON(500, gin.H{"error": err.Error()})
-return
-}
-c.JSON(201, gin.H{"message": "FTP user creation queued", "job_id": jobID})
-})
+				jobID, err := q.Push(ctx, "ADD_FTP_USER", string(payload))
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(201, gin.H{"message": "FTP user creation queued", "job_id": jobID})
+			})
 
-// Get Log Alerts (Watched by Watchdog module)
-user.GET("/alerts", func(c *gin.Context) {
-username := "demo_user"
+			// Get Log Alerts (Watched by Watchdog module)
+			user.GET("/alerts", func(c *gin.Context) {
+				username := "demo_user"
 
-// Ensure table exists safely inside the API to prevent errors
-_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS user_alerts (
+				// Ensure table exists safely inside the API to prevent errors
+				_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS user_alerts (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL,
 message TEXT NOT NULL,
@@ -205,58 +205,58 @@ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 notified BOOLEAN DEFAULT 0
 )`)
 
-rows, err := db.Query("SELECT message FROM user_alerts WHERE username = ? ORDER BY id DESC LIMIT 50", username)
-if err != nil {
-c.JSON(200, gin.H{"alerts": []string{"No new alerts."}})
-return
-}
-defer rows.Close()
+				rows, err := db.Query("SELECT message FROM user_alerts WHERE username = ? ORDER BY id DESC LIMIT 50", username)
+				if err != nil {
+					c.JSON(200, gin.H{"alerts": []string{"No new alerts."}})
+					return
+				}
+				defer rows.Close()
 
-var alerts []string
-for rows.Next() {
-var msg string
-if err := rows.Scan(&msg); err == nil {
-alerts = append(alerts, msg)
-}
-}
+				var alerts []string
+				for rows.Next() {
+					var msg string
+					if err := rows.Scan(&msg); err == nil {
+						alerts = append(alerts, msg)
+					}
+				}
 
-if len(alerts) == 0 {
-c.JSON(200, gin.H{"alerts": []string{"No active alerts found."}})
-return
-}
+				if len(alerts) == 0 {
+					c.JSON(200, gin.H{"alerts": []string{"No active alerts found."}})
+					return
+				}
 
-c.JSON(200, gin.H{"alerts": alerts})
-})
+				c.JSON(200, gin.H{"alerts": alerts})
+			})
 
-// Configure Log Alert Level
-user.POST("/alerts/config", func(c *gin.Context) {
-var req struct {
-Username string `json:"username"`
-Level    string `json:"level"` // "none", "errors", "warnings", "all"
-}
-if err := c.BindJSON(&req); err != nil {
-c.JSON(400, gin.H{"error": "Invalid input"})
-return
-}
+			// Configure Log Alert Level
+			user.POST("/alerts/config", func(c *gin.Context) {
+				var req struct {
+					Username string `json:"username"`
+					Level    string `json:"level"` // "none", "errors", "warnings", "all"
+				}
+				if err := c.BindJSON(&req); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid input"})
+					return
+				}
 
-// Ensure table exists
-_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS user_alert_prefs (
+				// Ensure table exists
+				_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS user_alert_prefs (
 username TEXT PRIMARY KEY,
 level TEXT DEFAULT 'errors'
 )`)
 
-// Save level to SQLite user prefs table
-_, err := db.Exec(`INSERT INTO user_alert_prefs (username, level) VALUES (?, ?) 
-ON CONFLICT(username) DO UPDATE SET level = excluded.level`, 
-req.Username, req.Level)
+				// Save level to SQLite user prefs table
+				_, err := db.Exec(`INSERT INTO user_alert_prefs (username, level) VALUES (?, ?) 
+ON CONFLICT(username) DO UPDATE SET level = excluded.level`,
+					req.Username, req.Level)
 
-if err != nil {
-c.JSON(500, gin.H{"error": "Database error"})
-return
-}
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Database error"})
+					return
+				}
 
-c.JSON(200, gin.H{"message": "Alert preferences updated to " + req.Level})
-})
-}
-}
+				c.JSON(200, gin.H{"message": "Alert preferences updated to " + req.Level})
+			})
+		}
+	}
 }
