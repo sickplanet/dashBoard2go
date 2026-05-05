@@ -1,0 +1,23 @@
+# Go workspace and binaries
+/dashboard-setup
+/dashBoard2go-core
+/dashBoard2go-watchdog
+/dashBoard2go-worker
+/dashBoard2go-setup
+*.test
+*.out
+/bin/
+
+# Database and configuration files
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+config.json
+
+# Development and planning
+plan.md
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
