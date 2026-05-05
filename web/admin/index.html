@@ -237,9 +237,22 @@
             window.location.href = '/login';
         }
 
+        async function fetchUpdates() {
+            try {
+                const res = await fetch('/api/v1/admin/updates');
+                const data = await res.json();
+                if (data.update_available && data.update_available !== "" && data.update_available !== "false") {
+                    document.getElementById('updateMenu').classList.remove('d-none');
+                    document.getElementById('updateBadge').innerText = data.update_available;
+                }
+            } catch(e) {}
+        }
+
         setInterval(fetchStats, 5000);
+        setInterval(fetchUpdates, 30000); // Check updates every 30 seconds
         fetchStats();
         fetchUsers();
+        fetchUpdates();
     </script>
 </body>
 </html>
