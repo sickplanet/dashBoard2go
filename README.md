@@ -49,7 +49,9 @@ apt-get update -y && apt-get install -y wget curl unzip ca-certificates
 wget $(curl -s https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest | grep browser_download_url | cut -d '"' -f 4) -O dashboard2go.zip
 unzip dashboard2go.zip
 cd dashBoard2go
+systemctl stop dashboard2go-core dashboard2go-worker dashboard2go-watchdog 2>/dev/null || true
 cp dashboard2go-* /usr/local/bin/
+rm -rf /usr/local/bin/web 2>/dev/null || true
 cp -r web /usr/local/bin/
 cd /usr/local/bin
 chmod +x dashboard2go-*

@@ -26,6 +26,10 @@ if ! command -v go &> /dev/null; then
   apt-get install -y golang
 fi
 
+# Stop running services to prevent "text file busy" errors when building/copying
+echo "Stopping running services if they exist..."
+systemctl stop dashboard2go-core dashboard2go-worker dashboard2go-watchdog dashboard2go-setup 2>/dev/null || true
+
 echo "Building core suite from source..."
 go mod tidy
 go build -o /usr/local/bin/dashboard2go-core ./cmd/core
@@ -37,6 +41,8 @@ echo "[3/5] Creating UI Directories..."
 mkdir -p /var/www/dashboard2go
 # Assuming we are running this from the source directory directly
 if [ -d "./web" ]; then
+  # remove the old web directory completely to overwrite properly
+  rm -rf /usr/local/bin/web
   cp -r ./web /usr/local/bin/
 fi
 
@@ -44,4 +50,4 @@ echo "[4/5] Launching Interactive Setup..."
 cd /usr/local/bin
 /usr/local/bin/dashboard2go-setup
 
-echo "[5/5] Initialization script finished."
+echo "[5/5] Initialization script finished. Services are enabled by the setup."

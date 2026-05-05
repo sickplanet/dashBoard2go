@@ -30,3 +30,4 @@ rules.md
 /watchdog
 /updater
 test.db*
+localdebug/
