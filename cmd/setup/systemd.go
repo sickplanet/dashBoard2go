@@ -20,7 +20,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=` + cwd + `
-ExecStart=` + cwd + `/dashBoard2go-core
+ExecStart=` + cwd + `/dashboard2go-core
 Restart=on-failure
 RestartSec=5s
 
@@ -35,7 +35,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=` + cwd + `
-ExecStart=` + cwd + `/dashBoard2go-worker
+ExecStart=` + cwd + `/dashboard2go-worker
 Restart=on-failure
 RestartSec=5s
 
@@ -50,7 +50,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=` + cwd + `
-ExecStart=` + cwd + `/dashBoard2go-watchdog
+ExecStart=` + cwd + `/dashboard2go-watchdog
 Restart=on-failure
 RestartSec=5s
 
