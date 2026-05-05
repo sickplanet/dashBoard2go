@@ -29,3 +29,4 @@ rules.md
 /worker
 /watchdog
 /updater
+test.db*

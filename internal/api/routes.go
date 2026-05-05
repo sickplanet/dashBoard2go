@@ -103,9 +103,11 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 		}
 
 		// Admin Endpoints
+		// TODO: Implement authentication/authorization middleware to protect /admin routes
 		admin := apiGroup.Group("/admin")
 		{
 			admin.GET("/status", func(c *gin.Context) {
+				// TODO: Implement actual status API logic and system health checks
 				c.JSON(200, gin.H{"status": "Admin API OK"})
 			})
 			admin.GET("/services", func(c *gin.Context) {
@@ -259,6 +261,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 		})
 
 		// User Endpoints
+		// TODO: Implement authentication/authorization middleware to protect /user routes
 		user := apiGroup.Group("/user")
 		{
 			// Add Domain/Vhost
@@ -311,6 +314,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 
 			// Get Log Alerts (Watched by Watchdog module)
 			user.GET("/alerts", func(c *gin.Context) {
+				// TODO: Fetch authenticated username from context/session properly instead of hardcoding
 				username := "demo_user"
 
 				// Ensure table exists safely inside the API to prevent errors
