@@ -26,6 +26,8 @@
                     <ul class="nav flex-column">
                         <li class="nav-item"><a class="nav-link active" href="#dashboard" data-bs-toggle="pill"><i class="bi bi-speedometer2 me-2"></i> Server Status</a></li>
                         <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="pill"><i class="bi bi-people me-2"></i> Users</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#databases" data-bs-toggle="pill"><i class="bi bi-database me-2"></i> Databases</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#email" data-bs-toggle="pill"><i class="bi bi-envelope me-2"></i> Email</a></li>
                         <li class="nav-item"><a class="nav-link" href="#php" data-bs-toggle="pill"><i class="bi bi-filetype-php me-2"></i> PHP Versions</a></li>
                         <li class="nav-item"><a class="nav-link" href="#firewall" data-bs-toggle="pill"><i class="bi bi-shield-lock me-2"></i> Firewall</a></li>
                         <li class="nav-item mt-4"><a class="nav-link text-warning" href="/user"><i class="bi bi-arrow-return-right me-2"></i> Switch to User UI</a></li>
@@ -131,6 +133,53 @@
                                         <tr><td>80/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTP Web Traffic</td></tr>
                                         <tr><td>443/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTPS Web Traffic</td></tr>
                                         <tr><td>8080/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>Dashboard Panel</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Databases Tab -->
+                    <div class="tab-pane fade" id="databases">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>MySQL / MariaDB Overview</span>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead><tr><th>Database Name</th><th>Assigned User</th><th>Size / Quota</th><th>Host</th><th>Actions</th></tr></thead>
+                                    <tbody id="mysqlTable">
+                                        <tr><td colspan="5" class="text-center text-muted">No databases found on system.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>PostgreSQL Overview</span>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead><tr><th>Database Name</th><th>Assigned User</th><th>Size</th><th>Host</th><th>Actions</th></tr></thead>
+                                    <tbody id="pgTable">
+                                        <tr><td colspan="5" class="text-center text-muted">PostgreSQL module disabled or not installed.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Tab -->
+                    <div class="tab-pane fade" id="email">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>System Mailboxes Overview</span>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead><tr><th>Email Address</th><th>Assigned User</th><th>Domain</th><th>Quota Usage</th><th>Actions</th></tr></thead>
+                                    <tbody id="mailTable">
+                                        <tr><td colspan="5" class="text-center text-muted">No mailboxes found on system.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
