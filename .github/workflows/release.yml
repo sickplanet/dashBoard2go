@@ -1,0 +1,80 @@
+name: Build, Test and Release
+
+on:
+  push:
+    branches:
+      - main # Triggers when you merge a branch (like dev) into main
+
+permissions:
+  contents: write # Grants permission to create releases and tags
+
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to fetch git tags to check for version duplicates
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Code Checks & Mod Tidy
+        run: go mod tidy
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Get Version Number
+        id: check_version
+        run: |
+          # Read the version from the VERSION file
+          if [ ! -f "VERSION" ]; then
+            echo "Error: VERSION file not found!"
+            exit 1
+          fi
+          
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
+          # Check if tag already exists in Git
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "CRITICAL ERROR: Tag $VERSION already exists!"
+            echo "You forgot to bump the version inside the VERSION file before merging."
+            exit 1 # This fails the Github Action, notifying you of the mistake
+          fi
+
+      - name: Compile Executables
+        run: |
+          mkdir -p output/dashBoard2go
+          # Build all binaries
+          GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-core ./cmd/core
+          GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-worker ./cmd/worker
+          GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-watchdog ./cmd/watchdog
+          GOOS=linux GOARCH=amd64 go build -o output/dashBoard2go/dashboard2go-setup ./cmd/setup
+          
+          # Copy dependencies
+          cp -r web output/dashBoard2go/web
+          cp install.sh output/dashBoard2go/install.sh
+          cp README.md output/dashBoard2go/README.md
+
+      - name: Package to ZIP
+        run: |
+          cd output
+          zip -r dashboard2go-linux-amd64-${{ env.VERSION }}.zip dashBoard2go/*
+          cd ..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: dashBoard2go ${{ env.VERSION }}
+          body: "Automated compiled release for dashBoard2go ${{ env.VERSION }}."
+          draft: false
+          prerelease: false
+          files: output/dashboard2go-linux-amd64-${{ env.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
