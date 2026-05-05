@@ -161,6 +161,122 @@
       </div>
     </div>
 
+    <!-- Add Database Form -->
+    <div class="modal fade" id="addDbModal" tabindex="-1" data-bs-theme="dark">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Create Database</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formAddDb">
+                <div class="mb-3">
+                    <label>Database Name</label>
+                    <input type="text" class="form-control bg-secondary text-white border-0" id="dbName" placeholder="db_name" required>
+                </div>
+                <div class="mb-3">
+                    <label>Database User</label>
+                    <input type="text" class="form-control bg-secondary text-white border-0" id="dbUser" placeholder="db_user" required>
+                </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" class="form-control bg-secondary text-white border-0" id="dbPass" required>
+                </div>
+                <button type="submit" class="btn btn-info text-dark w-100">Create Database</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Email Form -->
+    <div class="modal fade" id="addEmailModal" tabindex="-1" data-bs-theme="dark">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Create Mailbox</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formAddEmail">
+                <div class="mb-3">
+                    <label>Email Address</label>
+                    <input type="email" class="form-control bg-secondary text-white border-0" id="emailAddress" placeholder="user@domain.com" required>
+                </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" class="form-control bg-secondary text-white border-0" id="emailPass" required>
+                </div>
+                <div class="mb-3">
+                    <label>Quota (MB)</label>
+                    <input type="number" class="form-control bg-secondary text-white border-0" id="emailQuota" value="1024" required>
+                </div>
+                <button type="submit" class="btn btn-info text-dark w-100">Create Mailbox</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Database Form -->
+    <div class="modal fade" id="addDbModal" tabindex="-1" data-bs-theme="dark">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Create Database</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formAddDb">
+                <div class="mb-3">
+                    <label>Database Name</label>
+                    <input type="text" class="form-control bg-secondary text-white border-0" id="dbName" placeholder="db_name" required>
+                </div>
+                <div class="mb-3">
+                    <label>Database User</label>
+                    <input type="text" class="form-control bg-secondary text-white border-0" id="dbUser" placeholder="db_user" required>
+                </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" class="form-control bg-secondary text-white border-0" id="dbPass" required>
+                </div>
+                <button type="submit" class="btn btn-info text-dark w-100">Create Database</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Email Form -->
+    <div class="modal fade" id="addEmailModal" tabindex="-1" data-bs-theme="dark">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Create Mailbox</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formAddEmail">
+                <div class="mb-3">
+                    <label>Email Address</label>
+                    <input type="email" class="form-control bg-secondary text-white border-0" id="emailAddress" placeholder="user@domain.com" required>
+                </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" class="form-control bg-secondary text-white border-0" id="emailPass" required>
+                </div>
+                <div class="mb-3">
+                    <label>Quota (MB)</label>
+                    <input type="number" class="form-control bg-secondary text-white border-0" id="emailQuota" value="1024" required>
+                </div>
+                <button type="submit" class="btn btn-info text-dark w-100">Create Mailbox</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         if (localStorage.getItem('adminReturn') === 'true') {
@@ -250,6 +366,144 @@
 
             btn.innerText = originalText;
             var myModalEl = document.getElementById('addDomainModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl);
+            modal.hide();
+            e.target.reset();
+        });
+
+
+        document.getElementById('formAddDb').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = "Creating...";
+            
+            const payload = {
+                username: currentUser,
+                db_name: document.getElementById('dbName').value,
+                db_user: document.getElementById('dbUser').value,
+                db_pass: document.getElementById('dbPass').value
+            };
+
+            const res = await fetch('/api/v1/user/databases', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert("Database creation queued!");
+                await loadDatabases();
+            } else {
+                alert("Error: " + (data.error || "Unknown logic error"));
+            }
+
+            btn.innerText = originalText;
+            var myModalEl = document.getElementById('addDbModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl);
+            modal.hide();
+            e.target.reset();
+        });
+
+        document.getElementById('formAddEmail').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = "Creating...";
+            
+            const payload = {
+                username: currentUser,
+                address: document.getElementById('emailAddress').value,
+                password: document.getElementById('emailPass').value,
+                quota: parseInt(document.getElementById('emailQuota').value, 10)
+            };
+
+            const res = await fetch('/api/v1/user/emails', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert("Mailbox creation queued!");
+                await loadEmails();
+            } else {
+                alert("Error: " + (data.error || "Unknown logic error"));
+            }
+
+            btn.innerText = originalText;
+            var myModalEl = document.getElementById('addEmailModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl);
+            modal.hide();
+            e.target.reset();
+        });
+
+
+        document.getElementById("formAddDb").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const originalText = btn.innerText;
+            btn.innerText = "Creating...";
+            
+            const payload = {
+                username: currentUser,
+                db_name: document.getElementById("dbName").value,
+                db_user: document.getElementById("dbUser").value,
+                db_pass: document.getElementById("dbPass").value
+            };
+
+            const res = await fetch("/api/v1/user/databases", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert("Database creation queued!");
+                await loadDatabases();
+            } else {
+                alert("Error: " + (data.error || "Unknown logic"));
+            }
+
+            btn.innerText = originalText;
+            var myModalEl = document.getElementById("addDbModal");
+            var modal = bootstrap.Modal.getInstance(myModalEl);
+            modal.hide();
+            e.target.reset();
+        });
+
+        document.getElementById("formAddEmail").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const originalText = btn.innerText;
+            btn.innerText = "Creating...";
+            
+            const payload = {
+                username: currentUser,
+                address: document.getElementById("emailAddress").value,
+                password: document.getElementById("emailPass").value,
+                quota: parseInt(document.getElementById("emailQuota").value, 10)
+            };
+
+            const res = await fetch("/api/v1/user/emails", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert("Mailbox creation queued!");
+                await loadEmails();
+            } else {
+                alert("Error: " + (data.error || "Unknown logic"));
+            }
+
+            btn.innerText = originalText;
+            var myModalEl = document.getElementById("addEmailModal");
             var modal = bootstrap.Modal.getInstance(myModalEl);
             modal.hide();
             e.target.reset();
