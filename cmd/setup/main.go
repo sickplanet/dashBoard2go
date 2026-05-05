@@ -225,12 +225,12 @@ func main() {
 	exec.Command("ufw", "allow", "80/tcp").Run()
 	exec.Command("ufw", "allow", "443/tcp").Run()
 	exec.Command("ufw", "allow", "21/tcp").Run()
-	exec.Command("ufw", "allow", "25/tcp").Run() // SMTP
-	exec.Command("ufw", "allow", "143/tcp").Run() // IMAP
-	exec.Command("ufw", "allow", "465/tcp").Run() // SMTPS
-	exec.Command("ufw", "allow", "587/tcp").Run() // SMTP Submission
-	exec.Command("ufw", "allow", "993/tcp").Run() // IMAPS
-	exec.Command("ufw", "allow", "995/tcp").Run() // POP3S
+	exec.Command("ufw", "allow", "25/tcp").Run()   // SMTP
+	exec.Command("ufw", "allow", "143/tcp").Run()  // IMAP
+	exec.Command("ufw", "allow", "465/tcp").Run()  // SMTPS
+	exec.Command("ufw", "allow", "587/tcp").Run()  // SMTP Submission
+	exec.Command("ufw", "allow", "993/tcp").Run()  // IMAPS
+	exec.Command("ufw", "allow", "995/tcp").Run()  // POP3S
 	exec.Command("ufw", "allow", "8080/tcp").Run() // Panel HTTP
 	exec.Command("ufw", "allow", "8443/tcp").Run() // Panel HTTPS
 
