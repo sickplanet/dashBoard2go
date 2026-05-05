@@ -71,6 +71,7 @@ WantedBy=multi-user.target
 	exec.Command("systemctl", "daemon-reload").Run()
 	for name := range services {
 		exec.Command("systemctl", "enable", name).Run()
+		exec.Command("systemctl", "start", name).Run()
 	}
-	fmt.Println("Systemd Services Generated and Enabled.")
+	fmt.Println("Systemd Services Generated, Enabled, and Started.")
 }

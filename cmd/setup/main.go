@@ -27,6 +27,53 @@ func promptUser(reader *bufio.Reader, question, defaultVal string) string {
 	return input
 }
 
+// getPublicIP fetches the external IP
+func getPublicIP() string {
+	cmd := exec.Command("curl", "-s", "https://ifconfig.me")
+	out, err := cmd.Output()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	return string(out)
+}
+
+// setupLocalBindZone creates an authoritative zone for the FQDN
+func setupLocalBindZone(fqdn string) {
+	fmt.Println("Configuring local Bind9 Zone for " + fqdn)
+	ip := getPublicIP()
+	
+	zoneFile := fmt.Sprintf("/etc/bind/db.%s", fqdn)
+	zoneData := fmt.Sprintf(`$TTL    604800
+@       IN      SOA     ns1.%s. admin.%s. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      ns1.%s.
+@       IN      NS      ns2.%s.
+@       IN      A       %s
+ns1     IN      A       %s
+ns2     IN      A       %s
+`, fqdn, fqdn, fqdn, fqdn, ip, ip, ip)
+	
+	os.WriteFile(zoneFile, []byte(zoneData), 0644)
+	
+	namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
+	if !strings.Contains(string(namedLocal), fqdn) {
+		f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
+		if err == nil {
+			f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", fqdn, fqdn))
+			f.Close()
+		}
+	}
+	
+	exec.Command("systemctl", "restart", "bind9").Run()
+	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
+	fmt.Println("Bind9 reloaded successfully.")
+}
+
 func getCertForFQDN(fqdn string) error {
 	fmt.Println("Installing Certbot...")
 	oswrap.AptInstall("certbot")
@@ -156,6 +203,10 @@ func main() {
 
 	fmt.Println("[3/5] Configuring FQDN and AutoSSL...")
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
+	
+	// Create authoritative zone before probing Let's encrypt
+	setupLocalBindZone(hostname)
+
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
 		if err != nil {
