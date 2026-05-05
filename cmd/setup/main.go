@@ -38,41 +38,51 @@ func getPublicIP() string {
 }
 
 // setupLocalBindZone creates an authoritative zone for the FQDN
-func setupLocalBindZone(fqdn string) {
-	fmt.Println("Configuring local Bind9 Zone for " + fqdn)
-	ip := getPublicIP()
-
-	zoneFile := fmt.Sprintf("/etc/bind/db.%s", fqdn)
-	zoneData := fmt.Sprintf(`$TTL    604800
-@       IN      SOA     ns1.%s. admin.%s. (
+// createMicroZone binds an explicit exact-match domain to this server IP natively.
+func createMicroZone(domain, ns1, ns2, ip string) {
+if domain == "" {
+return
+}
+zoneFile := fmt.Sprintf("/etc/bind/db.%s", domain)
+zoneData := fmt.Sprintf(`$TTL    604800
+@       IN      SOA     %s. admin.%s. (
                               2         ; Serial
                          604800         ; Refresh
                           86400         ; Retry
                         2419200         ; Expire
                          604800 )       ; Negative Cache TTL
 ;
-@       IN      NS      ns1.%s.
-@       IN      NS      ns2.%s.
+@       IN      NS      %s.
+@       IN      NS      %s.
 @       IN      A       %s
-ns1     IN      A       %s
-ns2     IN      A       %s
-`, fqdn, fqdn, fqdn, fqdn, ip, ip, ip)
+`, ns1, domain, ns1, ns2, ip)
 
-	os.WriteFile(zoneFile, []byte(zoneData), 0644)
+os.WriteFile(zoneFile, []byte(zoneData), 0644)
 
-	namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
-	if !strings.Contains(string(namedLocal), fqdn) {
-		f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
-		if err == nil {
-			f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", fqdn, fqdn))
-			f.Close()
-		}
-	}
-
-	exec.Command("systemctl", "restart", "bind9").Run()
-	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
-	fmt.Println("Bind9 reloaded successfully.")
+namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
+if !strings.Contains(string(namedLocal), fmt.Sprintf("zone \"%s\"", domain)) {
+f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
+if err == nil {
+f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", domain, domain))
+f.Close()
 }
+}
+}
+
+// setupLocalBindZone creates authoritative zones for the FQDN and the Nameservers exclusively.
+func setupLocalBindZone(fqdn, ns1, ns2 string) {
+fmt.Println("Configuring explicit local Bind9 Zones for FQDN & Nameservers")
+ip := getPublicIP()
+
+createMicroZone(fqdn, ns1, ns2, ip)
+createMicroZone(ns1, ns1, ns2, ip)
+createMicroZone(ns2, ns1, ns2, ip)
+
+exec.Command("systemctl", "restart", "bind9").Run()
+exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
+fmt.Println("Bind9 explicit micro-zones loaded successfully.")
+}
+
 
 func getCertForFQDN(fqdn string) error {
 	fmt.Println("Installing Certbot...")
@@ -128,6 +138,8 @@ func main() {
 	fmt.Println("==================================================")
 
 	hostname := promptUser(reader, "Enter FQDN Hostname", "server1.example.com")
+	ns1 := promptUser(reader, "Enter Primary Nameserver", "ns1.example.com")
+	ns2 := promptUser(reader, "Enter Secondary Nameserver", "ns2.example.com")
 	enableIPv6 := promptUser(reader, "Enable IPv6 Support?", "y")
 	webServer := promptUser(reader, "Select Web Server (apache/nginx)", "nginx")
 	dbServer := promptUser(reader, "Select Postgres Database additionally? (mariadb is mandatory)", "n")
@@ -209,7 +221,7 @@ func main() {
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
 
 	// Create authoritative zone before probing Let's encrypt
-	setupLocalBindZone(hostname)
+	setupLocalBindZone(hostname, ns1, ns2)
 
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
@@ -246,6 +258,8 @@ func main() {
 		Installed:          true,
 		PanelVersion:       "v1.0.0",
 		FQDN:               hostname,
+		NS1:                ns1,
+		NS2:                ns2,
 		UseLetsEncryptFQDN: useLetsEncrypt,
 		PanelPortHTTP:      8080,
 		PanelPortHTTPS:     8443,
