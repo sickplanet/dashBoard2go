@@ -196,11 +196,11 @@ func main() {
 		packages = append(packages, "postgresql")
 	}
 
-	// Dynamic PHP Version and comprehensive WordPress/Modern App Dependencies
+	// PHP Dependencies (using OS default PHP version)
 	phpPackages := []string{
-		"php8.3-fpm", "php8.3-cli", "php8.3-mysql", "php8.3-curl",
-		"php8.3-gd", "php8.3-mbstring", "php8.3-xml", "php8.3-zip",
-		"php8.3-opcache", "php8.3-bz2", "php8.3-intl", "php8.3-bcmath",
+		"php-fpm", "php-cli", "php-mysql", "php-curl",
+		"php-gd", "php-mbstring", "php-xml", "php-zip",
+		"php-bz2", "php-intl", "php-bcmath", "php-common",
 		"php-imagick", "php-redis", "php-memcached", "redis-server",
 	}
 	if webServer == "apache2" {

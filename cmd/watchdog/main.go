@@ -32,7 +32,7 @@ func main() {
 		"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot", "amavis", "pure-ftpd", "ufw",
 	}
 
-	ufwWrapper := wrappers.NewUFWWrapper()
+	ufwWrapper := wrappers.NewUFWWrapper(nil)
 
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
