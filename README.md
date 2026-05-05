@@ -45,7 +45,7 @@ For general users, we recommend downloading the pre-compiled binary release to s
 2. Download the latest release from GitHub and run the setup:
 
 ```bash
-apt-get update -y && apt-get install -y wget unzip
+apt-get update -y && apt-get install -y wget curl unzip ca-certificates
 wget $(curl -s https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest | grep browser_download_url | cut -d '"' -f 4) -O dashboard2go.zip
 unzip dashboard2go.zip
 cd dashBoard2go
