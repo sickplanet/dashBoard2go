@@ -40,11 +40,11 @@ func getPublicIP() string {
 // setupLocalBindZone creates an authoritative zone for the FQDN
 // createMicroZone binds an explicit exact-match domain to this server IP natively.
 func createMicroZone(domain, ns1, ns2, ip string) {
-if domain == "" {
-return
-}
-zoneFile := fmt.Sprintf("/etc/bind/db.%s", domain)
-zoneData := fmt.Sprintf(`$TTL    604800
+	if domain == "" {
+		return
+	}
+	zoneFile := fmt.Sprintf("/etc/bind/db.%s", domain)
+	zoneData := fmt.Sprintf(`$TTL    604800
 @       IN      SOA     %s. admin.%s. (
                               2         ; Serial
                          604800         ; Refresh
@@ -57,32 +57,31 @@ zoneData := fmt.Sprintf(`$TTL    604800
 @       IN      A       %s
 `, ns1, domain, ns1, ns2, ip)
 
-os.WriteFile(zoneFile, []byte(zoneData), 0644)
+	os.WriteFile(zoneFile, []byte(zoneData), 0644)
 
-namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
-if !strings.Contains(string(namedLocal), fmt.Sprintf("zone \"%s\"", domain)) {
-f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
-if err == nil {
-f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", domain, domain))
-f.Close()
-}
-}
+	namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
+	if !strings.Contains(string(namedLocal), fmt.Sprintf("zone \"%s\"", domain)) {
+		f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
+		if err == nil {
+			f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", domain, domain))
+			f.Close()
+		}
+	}
 }
 
 // setupLocalBindZone creates authoritative zones for the FQDN and the Nameservers exclusively.
 func setupLocalBindZone(fqdn, ns1, ns2 string) {
-fmt.Println("Configuring explicit local Bind9 Zones for FQDN & Nameservers")
-ip := getPublicIP()
+	fmt.Println("Configuring explicit local Bind9 Zones for FQDN & Nameservers")
+	ip := getPublicIP()
 
-createMicroZone(fqdn, ns1, ns2, ip)
-createMicroZone(ns1, ns1, ns2, ip)
-createMicroZone(ns2, ns1, ns2, ip)
+	createMicroZone(fqdn, ns1, ns2, ip)
+	createMicroZone(ns1, ns1, ns2, ip)
+	createMicroZone(ns2, ns1, ns2, ip)
 
-exec.Command("systemctl", "restart", "bind9").Run()
-exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
-fmt.Println("Bind9 explicit micro-zones loaded successfully.")
+	exec.Command("systemctl", "restart", "bind9").Run()
+	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
+	fmt.Println("Bind9 explicit micro-zones loaded successfully.")
 }
-
 
 func getCertForFQDN(fqdn string) error {
 	fmt.Println("Installing Certbot...")
