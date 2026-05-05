@@ -109,4 +109,3 @@ func (u *UFWWrapper) Sync(ctx context.Context) (bool, error) {
 	// Sync disabled temporarily for modular fixes
 	return false, nil
 }
-

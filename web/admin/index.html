@@ -80,6 +80,18 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Watchdog Service Status -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card p-3">
+                                    <h5 class="card-title text-secondary">Watchdog Services Status <button class="btn btn-sm btn-outline-info float-end" onclick="fetchServices()">Refresh</button></h5>
+                                    <div id="servicesStatus" class="d-flex flex-wrap gap-2 mt-2">
+                                        <span class="badge bg-secondary">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Users Tab -->

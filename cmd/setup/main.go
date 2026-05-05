@@ -100,6 +100,11 @@ func getCertForFQDN(fqdn string) error {
 	// Actually, let's provision using webroot and assume the user hasn't mapped the domain yet, we might need standalone for the VERY first run.
 
 	fmt.Printf("Procuring Let's Encrypt Certificate for %s...\n", fqdn)
+
+	// Stop web services so certbot can bind port 80
+	exec.Command("systemctl", "stop", "nginx").Run()
+	exec.Command("systemctl", "stop", "apache2").Run()
+
 	cmd := exec.Command("certbot", "certonly",
 		"--standalone", // Use standalone during initial setup before Nginx/Apache are fully configured
 		"-d", fqdn,
