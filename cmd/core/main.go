@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"dashBoard2go/internal/api"
-	"dashBoard2go/internal/db/migrations"
 	"dashBoard2go/internal/config"
+	"dashBoard2go/internal/db/migrations"
 	"dashBoard2go/internal/queue"
 
 	"github.com/gin-gonic/gin"
@@ -45,10 +45,10 @@ func main() {
 		log.Fatalf("FAILED to run SQLite migrations: %v", err)
 	}
 
-        log.Println("Checking and running DB migrations...")
-        if err := migrations.Migrate(db); err != nil {
-                log.Fatalf("FAILED to run SQLite migrations: %v", err)
-        }
+	log.Println("Checking and running DB migrations...")
+	if err := migrations.Migrate(db); err != nil {
+		log.Fatalf("FAILED to run SQLite migrations: %v", err)
+	}
 
 	q, err := queue.NewSQLiteQueue(db)
 	if err != nil {

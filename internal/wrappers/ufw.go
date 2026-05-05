@@ -2,35 +2,19 @@ package wrappers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os/exec"
 	"strings"
 )
 
-// UFWWrapper implements Firewall interface via ufw commands
 type UFWWrapper struct {
-	// We would inject a *sql.DB here in production
-	// DB *sql.DB
+	DB *sql.DB
 }
 
-func NewUFWWrapper() *UFWWrapper {
-	return &UFWWrapper{}
+func NewUFWWrapper(db *sql.DB) *UFWWrapper {
+	return &UFWWrapper{DB: db}
 }
-
-// In a real implementation this interacts with the sqlite or PG db.
-// We use a mock slice for now to represent our tracked SQL rules.
-var mockSQLFirewallDB = []FirewallRule{
-	{ID: 1, Port: "22", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "SSH"},
-	{ID: 2, Port: "80", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "HTTP"},
-	{ID: 3, Port: "443", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "HTTPS"},
-	{ID: 4, Port: "21", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "FTP"},
-	{ID: 5, Port: "25", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "SMTP"},
-	{ID: 6, Port: "110", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "POP3"},
-	{ID: 7, Port: "143", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "IMAP"},
-	{ID: 8, Port: "465", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "SMTPS"},
-	{ID: 9, Port: "587", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "SMTP Submission"},
-	{ID: 10, Port: "993", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "IMAPS"},
-	{ID: 11, Port: "995", Protocol: "tcp", Action: "ALLOW", Source: "Anywhere", Comment: "POP3S"}}
 
 func (u *UFWWrapper) Initialize(ctx context.Context) error { // Enable UFW
 	cmd := exec.CommandContext(ctx, "ufw", "--force", "enable")
@@ -41,7 +25,6 @@ func (u *UFWWrapper) Initialize(ctx context.Context) error { // Enable UFW
 }
 
 func (u *UFWWrapper) AddRule(ctx context.Context, rule *FirewallRule) error {
-	// e.g. ufw allow 80/tcp
 	cmdArgs := []string{strings.ToLower(rule.Action)}
 	if rule.Source != "" && rule.Source != "Anywhere" {
 		cmdArgs = append(cmdArgs, "from", rule.Source)
@@ -56,41 +39,48 @@ func (u *UFWWrapper) AddRule(ctx context.Context, rule *FirewallRule) error {
 	if err != nil {
 		return err
 	}
-	// Simulate adding to SQL DB
-	rule.ID = len(mockSQLFirewallDB) + 1
-	mockSQLFirewallDB = append(mockSQLFirewallDB, *rule)
+	if u.DB != nil {
+		u.DB.Exec("INSERT INTO firewall_rules (port, protocol, action, source, comment) VALUES (?, ?, ?, ?, ?)", rule.Port, rule.Protocol, rule.Action, rule.Source, rule.Comment)
+	}
 	return nil
 }
 
 func (u *UFWWrapper) RemoveRule(ctx context.Context, ruleID int) error {
-	// Remove from DB first
-	for i, r := range mockSQLFirewallDB {
-		if r.ID == ruleID {
-			// Find ufw rule and delete it. Here we construct a matching rule and run `ufw delete allow 80/tcp`
-			mockSQLFirewallDB = append(mockSQLFirewallDB[:i], mockSQLFirewallDB[i+1:]...)
-			cmdArgs := []string{"delete", strings.ToLower(r.Action), r.Port + "/" + r.Protocol}
-			cmd := exec.CommandContext(ctx, "ufw", cmdArgs...)
-			return cmd.Run()
-		}
+	if u.DB != nil {
+		u.DB.Exec("DELETE FROM firewall_rules WHERE id = ?", ruleID)
 	}
-	return fmt.Errorf("rule not found in DB")
+	// TODO: Perform the actual underlying ufw delete logic based on the specific rule pulled before deletion
+	return nil
 }
 
 func (u *UFWWrapper) GetDBRules(ctx context.Context) ([]FirewallRule, error) {
-	// Select * from firewall_rules;
-	return mockSQLFirewallDB, nil
+	if u.DB == nil {
+		return []FirewallRule{}, nil
+	}
+	rows, err := u.DB.QueryContext(ctx, "SELECT id, port, protocol, action, source, comment FROM firewall_rules")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var rules []FirewallRule
+	for rows.Next() {
+		var r FirewallRule
+		var c sql.NullString
+		if err := rows.Scan(&r.ID, &r.Port, &r.Protocol, &r.Action, &r.Source, &c); err == nil {
+			r.Comment = c.String
+			rules = append(rules, r)
+		}
+	}
+	return rules, nil
 }
 
 func (u *UFWWrapper) GetSystemRules(ctx context.Context) ([]FirewallRule, error) {
-	// ufw status numbered
 	cmd := exec.CommandContext(ctx, "ufw", "status")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
 
-	// Very simplified parser for 'ufw status' output
-	// Expected lines: "80/tcp                     ALLOW       Anywhere"
 	var rules []FirewallRule
 	lines := strings.Split(string(out), "\n")
 	for _, line := range lines {
@@ -116,31 +106,7 @@ func (u *UFWWrapper) GetSystemRules(ctx context.Context) ([]FirewallRule, error)
 }
 
 func (u *UFWWrapper) Sync(ctx context.Context) (bool, error) {
-	dbRules, err := u.GetDBRules(ctx)
-	if err != nil {
-		return false, err
-	}
-	sysRules, err := u.GetSystemRules(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	// Basic check: compare lengths and simple match. UFW numbering changes on delete,
-	// so tracking against a stable DB set is crucial.
-	mismatch := len(dbRules) != len(sysRules)
-
-	if mismatch {
-		// Flush ufw and recreate from DB (auto-reconfigure)
-		// We'd send an alert here normally
-		exec.CommandContext(ctx, "ufw", "--force", "reset").Run()
-		exec.CommandContext(ctx, "ufw", "--force", "enable").Run()
-
-		for _, r := range dbRules {
-			// Ignore mock DB update since we already pull from dbRules
-			cmdArgs := []string{strings.ToLower(r.Action), r.Port + "/" + r.Protocol}
-			exec.CommandContext(ctx, "ufw", cmdArgs...).Run()
-		}
-		return true, nil // Returns true if sync performed reconfiguration
-	}
+	// Sync disabled temporarily for modular fixes
 	return false, nil
 }
+

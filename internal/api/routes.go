@@ -117,59 +117,66 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, statuses)
 			})
 
-			
-admin.GET("/updates", func(c *gin.Context) {
-var update string
-err := db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
-if err != nil {
-c.JSON(200, gin.H{"update_available": ""})
-return
-}
-c.JSON(200, gin.H{"update_available": update})
-})
+			admin.GET("/updates", func(c *gin.Context) {
+				var update string
+				err := db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
+				if err != nil {
+					c.JSON(200, gin.H{"update_available": ""})
+					return
+				}
+				c.JSON(200, gin.H{"update_available": update})
+			})
 
-admin.GET("/firewall", func(c *gin.Context) {
-ufw := wrappers.NewUFWWrapper()
-rules, err := ufw.GetSystemRules(c)
-if err != nil {
-c.JSON(500, gin.H{"error": "Failed to fetch UFW rules"})
-return
-}
-c.JSON(200, rules)
-})
+			admin.GET("/firewall", func(c *gin.Context) {
+				ufw := wrappers.NewUFWWrapper(db)
+				systemRules, err := ufw.GetSystemRules(c.Request.Context())
+				if err != nil {
+					systemRules = []wrappers.FirewallRule{}
+				}
+				dbRules, err := ufw.GetDBRules(c.Request.Context())
+				if err != nil {
+					dbRules = []wrappers.FirewallRule{}
+				}
+				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
+			})
 
-admin.GET("/firewall", func(c *gin.Context) {
-ufw := wrappers.NewUFWWrapper()
-rules, err := ufw.GetSystemRules(c)
-if err != nil {
-c.JSON(500, gin.H{"error": "Failed to fetch UFW rules"})
-return
-}
-c.JSON(200, rules)
-})
+			admin.GET("/firewall", func(c *gin.Context) {
+				ufw := wrappers.NewUFWWrapper(db)
+				systemRules, err := ufw.GetSystemRules(c.Request.Context())
+				if err != nil {
+					systemRules = []wrappers.FirewallRule{}
+				}
+				dbRules, err := ufw.GetDBRules(c.Request.Context())
+				if err != nil {
+					dbRules = []wrappers.FirewallRule{}
+				}
+				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
+			})
 
-admin.GET("/users", func(c *gin.Context) {
-rows, err := db.Query("SELECT id, username, is_admin FROM panel_users")
-if err != nil {
-c.JSON(200, []interface{}{})
-return
-}
-defer rows.Close()
+			admin.GET("/users", func(c *gin.Context) {
+				rows, err := db.Query("SELECT id, username, is_admin FROM panel_users")
+				if err != nil {
+					c.JSON(200, []interface{}{})
+					return
+				}
+				defer rows.Close()
 
-var results []map[string]interface{}
-for rows.Next() {
-var id int
-var username string
-var isAdmin bool
-if err := rows.Scan(&id, &username, &isAdmin); err == nil {
-results = append(results, map[string]interface{}{"id": id, "username": username, "is_admin": isAdmin})
-}
-}
-if results == nil { results = []map[string]interface{}{} }
-c.JSON(200, results)
-})
+				var results []map[string]interface{}
+				for rows.Next() {
+					var id int
+					var username string
+					var isAdmin bool
+					if err := rows.Scan(&id, &username, &isAdmin); err == nil {
+						results = append(results, map[string]interface{}{"id": id, "username": username, "is_admin": isAdmin})
+					}
+				}
+				if results == nil {
+					results = []map[string]interface{}{}
+				}
+				c.JSON(200, results)
+			})
 
-// Create a unified Panel User (System Account + Base Directories)
+			// Create a unified Panel User (System Account + Base Directories)
 			admin.POST("/accounts", func(c *gin.Context) {
 				var req struct {
 					Username string `json:"username"`
@@ -194,72 +201,77 @@ c.JSON(200, results)
 			})
 		}
 
-		
-// Admin Domains
-admin.GET("/domains", func(c *gin.Context) {
-rows, err := db.Query("SELECT id, username, domain, php_version, ssl_enabled FROM domains")
-if err != nil {
-c.JSON(200, gin.H{"domains": []interface{}{}})
-return
-}
-defer rows.Close()
+		// Admin Domains
+		admin.GET("/domains", func(c *gin.Context) {
+			rows, err := db.Query("SELECT id, username, domain, php_version, ssl_enabled FROM domains")
+			if err != nil {
+				c.JSON(200, gin.H{"domains": []interface{}{}})
+				return
+			}
+			defer rows.Close()
 
-var results []map[string]interface{}
-for rows.Next() {
-var id int
-var username, domain, phpV string
-var ssl bool
-if err := rows.Scan(&id, &username, &domain, &phpV, &ssl); err == nil {
-results = append(results, map[string]interface{}{"id": id, "username": username, "domain": domain, "php_version": phpV, "ssl_enabled": ssl})
-}
-}
-if results == nil { results = []map[string]interface{}{} }
-c.JSON(200, gin.H{"domains": results})
-})
+			var results []map[string]interface{}
+			for rows.Next() {
+				var id int
+				var username, domain, phpV string
+				var ssl bool
+				if err := rows.Scan(&id, &username, &domain, &phpV, &ssl); err == nil {
+					results = append(results, map[string]interface{}{"id": id, "username": username, "domain": domain, "php_version": phpV, "ssl_enabled": ssl})
+				}
+			}
+			if results == nil {
+				results = []map[string]interface{}{}
+			}
+			c.JSON(200, gin.H{"domains": results})
+		})
 
-// Admin Databases
-admin.GET("/databases", func(c *gin.Context) {
-rows, err := db.Query("SELECT id, username, db_name, db_user, db_host FROM databases")
-if err != nil {
-c.JSON(200, gin.H{"databases": []interface{}{}})
-return
-}
-defer rows.Close()
+		// Admin Databases
+		admin.GET("/databases", func(c *gin.Context) {
+			rows, err := db.Query("SELECT id, username, db_name, db_user, db_host FROM databases")
+			if err != nil {
+				c.JSON(200, gin.H{"databases": []interface{}{}})
+				return
+			}
+			defer rows.Close()
 
-var results []map[string]interface{}
-for rows.Next() {
-var id int
-var username, dbName, dbUser, dbHost string
-if err := rows.Scan(&id, &username, &dbName, &dbUser, &dbHost); err == nil {
-results = append(results, map[string]interface{}{"id": id, "username": username, "db_name": dbName, "db_user": dbUser, "db_host": dbHost})
-}
-}
-if results == nil { results = []map[string]interface{}{} }
-c.JSON(200, gin.H{"databases": results})
-})
+			var results []map[string]interface{}
+			for rows.Next() {
+				var id int
+				var username, dbName, dbUser, dbHost string
+				if err := rows.Scan(&id, &username, &dbName, &dbUser, &dbHost); err == nil {
+					results = append(results, map[string]interface{}{"id": id, "username": username, "db_name": dbName, "db_user": dbUser, "db_host": dbHost})
+				}
+			}
+			if results == nil {
+				results = []map[string]interface{}{}
+			}
+			c.JSON(200, gin.H{"databases": results})
+		})
 
-// Admin Emails
-admin.GET("/emails", func(c *gin.Context) {
-rows, err := db.Query("SELECT id, username, address, quota FROM mailboxes")
-if err != nil {
-c.JSON(200, gin.H{"emails": []interface{}{}})
-return
-}
-defer rows.Close()
+		// Admin Emails
+		admin.GET("/emails", func(c *gin.Context) {
+			rows, err := db.Query("SELECT id, username, address, quota FROM mailboxes")
+			if err != nil {
+				c.JSON(200, gin.H{"emails": []interface{}{}})
+				return
+			}
+			defer rows.Close()
 
-var results []map[string]interface{}
-for rows.Next() {
-var id, quota int
-var username, address string
-if err := rows.Scan(&id, &username, &address, &quota); err == nil {
-results = append(results, map[string]interface{}{"id": id, "username": username, "address": address, "quota": quota})
-}
-}
-if results == nil { results = []map[string]interface{}{} }
-c.JSON(200, gin.H{"emails": results})
-})
+			var results []map[string]interface{}
+			for rows.Next() {
+				var id, quota int
+				var username, address string
+				if err := rows.Scan(&id, &username, &address, &quota); err == nil {
+					results = append(results, map[string]interface{}{"id": id, "username": username, "address": address, "quota": quota})
+				}
+			}
+			if results == nil {
+				results = []map[string]interface{}{}
+			}
+			c.JSON(200, gin.H{"emails": results})
+		})
 
-// User Endpoints
+		// User Endpoints
 		user := apiGroup.Group("/user")
 		{
 			// Add Domain/Vhost
