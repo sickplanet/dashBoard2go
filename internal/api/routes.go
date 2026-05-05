@@ -140,19 +140,6 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
 			})
 
-			admin.GET("/firewall", func(c *gin.Context) {
-				ufw := wrappers.NewUFWWrapper(db)
-				systemRules, err := ufw.GetSystemRules(c.Request.Context())
-				if err != nil {
-					systemRules = []wrappers.FirewallRule{}
-				}
-				dbRules, err := ufw.GetDBRules(c.Request.Context())
-				if err != nil {
-					dbRules = []wrappers.FirewallRule{}
-				}
-				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
-			})
-
 			admin.GET("/users", func(c *gin.Context) {
 				rows, err := db.Query("SELECT id, username, is_admin FROM panel_users")
 				if err != nil {
