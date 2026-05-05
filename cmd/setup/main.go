@@ -11,6 +11,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/oswrap"
 )
@@ -86,8 +88,8 @@ func main() {
 	}
 
 	enableAutoSSL := promptUser(reader, "Automatically configure Let's Encrypt SSL for FQDN?", "y")
-	adminPass := promptUser
-	_ = adminPass(reader, "Enter Admin Password for Control Panel", "admin123")
+	adminPass := promptUser(reader, "Enter Admin Password for Control Panel", "admin123")
+	
 
 	fmt.Println("\nConfiguration Summary:")
 	fmt.Printf("- Hostname: %s\n", hostname)
@@ -202,10 +204,15 @@ func main() {
                         password TEXT NOT NULL,
                         is_admin BOOLEAN DEFAULT 0
                 )`)
-		// In production, encrypt using bcrypt!. Using plain text for mockup visualization.
-		_, _ = db.Exec(`INSERT INTO panel_users (username, password, is_admin) VALUES (?, ?, 1)
+// Encrypt using bcrypt
+                hashedPass, err := bcrypt.GenerateFromPassword([]byte(adminPass), bcrypt.DefaultCost)
+                if err != nil {
+                        log.Fatalf("Failed to hash admin password: %v", err)
+                }
+
+                _, _ = db.Exec(`INSERT INTO panel_users (username, password, is_admin) VALUES (?, ?, 1)
                         ON CONFLICT(username) DO UPDATE SET password = excluded.password`,
-			"admin", adminPass)
+                        "admin", string(hashedPass))
 		db.Close()
 	}
 

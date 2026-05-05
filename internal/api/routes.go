@@ -1,29 +1,107 @@
 package api
 
 import (
-"context"
-"database/sql"
-"encoding/json"
-"net/http"
-"time"
+	"context"
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"time"
 
-"dashBoard2go/internal/oswrap"
-"dashBoard2go/internal/queue"
+	"dashBoard2go/internal/oswrap"
+	"dashBoard2go/internal/queue"
 
-"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // SetupRoutes registers the HTTP routes for the web interface and API
 func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
-// Root redirect depending on state/login
-r.GET("/", func(c *gin.Context) {
-c.Redirect(http.StatusMovedPermanently, "/user")
-})
+	// Root redirect depending on state/login
+	r.GET("/", func(c *gin.Context) {
+		sessionToken, err := c.Cookie("dashboard_session")
+		if err != nil || sessionToken == "" {
+			c.Redirect(http.StatusMovedPermanently, "/login")
+			return
+		}
+		
+		var isAdmin bool
+		err = db.QueryRow("SELECT is_admin FROM sessions JOIN panel_users ON sessions.username = panel_users.username WHERE sessions.token = ? AND sessions.expires_at > ?", sessionToken, time.Now()).Scan(&isAdmin)
+		if err != nil {
+			// Invalid session or expired
+			c.SetCookie("dashboard_session", "", -1, "/", "", false, true)
+			c.Redirect(http.StatusMovedPermanently, "/login")
+			return
+		}
 
-// API Group Strategy
-apiGroup := r.Group("/api/v1")
-{
-// Admin Endpoints
+		if isAdmin {
+			c.Redirect(http.StatusMovedPermanently, "/admin")
+		} else {
+			c.Redirect(http.StatusMovedPermanently, "/user")
+		}
+	})
+
+	r.StaticFile("/login", "./web/login.html")
+
+	// API Group Strategy
+	apiGroup := r.Group("/api/v1")
+	{
+		// Auth Endpoints
+		auth := apiGroup.Group("/auth")
+		{
+			auth.POST("/login", func(c *gin.Context) {
+				var req struct {
+					Username string `json:"username"`
+					Password string `json:"password"`
+				}
+				if err := c.BindJSON(&req); err != nil {
+					c.JSON(400, gin.H{"error": "Invalid request format"})
+					return
+				}
+
+				var hash string
+				var isAdmin bool
+				err := db.QueryRow("SELECT password, is_admin FROM panel_users WHERE username = ?", req.Username).Scan(&hash, &isAdmin)
+				
+				if err == sql.ErrNoRows {
+					c.JSON(401, gin.H{"error": "Invalid username or password"})
+					return
+				} else if err != nil {
+					c.JSON(500, gin.H{"error": "Internal server error"})
+					return
+				}
+
+				if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)); err != nil {
+					c.JSON(401, gin.H{"error": "Invalid username or password"})
+					return
+				}
+
+				// Session management
+				sessionToken := uuid.New().String()
+				expiresAt := time.Now().Add(24 * time.Hour)
+
+				_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS sessions (
+					token TEXT PRIMARY KEY,
+					username TEXT NOT NULL,
+					expires_at DATETIME NOT NULL
+				)`)
+				
+				_, err = db.Exec("INSERT INTO sessions (token, username, expires_at) VALUES (?, ?, ?)", sessionToken, req.Username, expiresAt)
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Failed to create session"})
+					return
+				}
+
+				c.SetCookie("dashboard_session", sessionToken, 86400, "/", "", false, true)
+
+				c.JSON(200, gin.H{
+					"message":  "Login successful",
+					"is_admin": isAdmin,
+				})
+			})
+		}
+
+		// Admin Endpoints
 admin := apiGroup.Group("/admin")
 {
 admin.GET("/status", func(c *gin.Context) {
