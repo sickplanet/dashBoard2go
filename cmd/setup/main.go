@@ -104,11 +104,23 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("\n[1/4] Applying Hostname...")
-	// Note: in a real install we use hostnamectl
+	fmt.Println("\n[1/5] Applying Hostname...")
+	exec.Command("hostnamectl", "set-hostname", hostname).Run()
+	os.WriteFile("/etc/hostname", []byte(hostname+"\n"), 0644)
+	shortHostname := strings.Split(hostname, ".")[0]
+	hostsEntry := fmt.Sprintf("127.0.1.1\t%s\t%s\n", hostname, shortHostname)
+	hostsFile, _ := os.ReadFile("/etc/hosts")
+	if !strings.Contains(string(hostsFile), hostname) {
+		f, _ := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_WRONLY, 0600)
+		if f != nil {
+			f.WriteString(hostsEntry)
+			f.Close()
+		}
+	}
+
 	oswrap.AptUpdate()
 
-	fmt.Println("[2/4] Installing target stack packages...")
+	fmt.Println("[2/5] Installing target stack packages...")
 	packages := []string{}
 
 	if webServer == "nginx" {
@@ -142,7 +154,7 @@ func main() {
 		log.Println("If you are not running as root on Debian/Ubuntu, packages mock-failed.")
 	}
 
-	fmt.Println("[3/4] Configuring FQDN and AutoSSL...")
+	fmt.Println("[3/5] Configuring FQDN and AutoSSL...")
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
