@@ -129,11 +129,9 @@
                             </div>
                             <div class="card-body">
                                 <table class="table table-dark">
-                                    <thead><tr><th>Port / Protocol</th><th>Action</th><th>Description</th></tr></thead>
+                                    <thead><tr><th>Port / Protocol</th><th>Action</th><th>Description / Source</th></tr></thead>
                                     <tbody id="fwTable">
-                                        <tr><td>80/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTP Web Traffic</td></tr>
-                                        <tr><td>443/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTPS Web Traffic</td></tr>
-                                        <tr><td>8080/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>Dashboard Panel</td></tr>
+                                        <tr><td colspan="3">Loading firewall rules...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -232,6 +230,29 @@
             window.location.href = `/api/v1/auth/impersonate?user=${username}`;
         }
 
+        async function fetchFirewall() {
+            try {
+                const res = await fetch('/api/v1/admin/firewall');
+                const rules = await res.json();
+                let html = '';
+                if(rules && rules.length > 0) {
+                    rules.forEach(r => {
+                        let actionClass = r.Action.includes('ALLOW') ? 'bg-success' : 'bg-danger';
+                        html += `<tr>
+                            <td>${r.Port || '*'}${r.Protocol ? '/' + r.Protocol : ''}</td>
+                            <td><span class="badge ${actionClass}">${r.Action}</span></td>
+                            <td>${r.Source || 'Anywhere'} ${r.Comment ? ' - ' + r.Comment : ''}</td>
+                        </tr>`;
+                    });
+                } else {
+                    html = '<tr><td colspan="3">No rules found or UFW disabled.</td></tr>';
+                }
+                document.getElementById('fwTable').innerHTML = html;
+            } catch(e) {
+                document.getElementById('fwTable').innerHTML = '<tr><td colspan="3">Failed to load firewall rules.</td></tr>';
+            }
+        }
+
         function logout() {
             document.cookie = "dashboard_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login';
@@ -253,6 +274,7 @@
         fetchStats();
         fetchUsers();
         fetchUpdates();
+        fetchFirewall();
     </script>
 </body>
 </html>

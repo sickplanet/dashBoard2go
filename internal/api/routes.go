@@ -9,6 +9,7 @@ import (
 
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/queue"
+	"dashBoard2go/internal/wrappers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -125,6 +126,26 @@ c.JSON(200, gin.H{"update_available": ""})
 return
 }
 c.JSON(200, gin.H{"update_available": update})
+})
+
+admin.GET("/firewall", func(c *gin.Context) {
+ufw := wrappers.NewUFWWrapper()
+rules, err := ufw.GetSystemRules(c)
+if err != nil {
+c.JSON(500, gin.H{"error": "Failed to fetch UFW rules"})
+return
+}
+c.JSON(200, rules)
+})
+
+admin.GET("/firewall", func(c *gin.Context) {
+ufw := wrappers.NewUFWWrapper()
+rules, err := ufw.GetSystemRules(c)
+if err != nil {
+c.JSON(500, gin.H{"error": "Failed to fetch UFW rules"})
+return
+}
+c.JSON(200, rules)
 })
 
 admin.GET("/users", func(c *gin.Context) {
