@@ -127,6 +127,27 @@ return
 c.JSON(200, gin.H{"update_available": update})
 })
 
+admin.GET("/users", func(c *gin.Context) {
+rows, err := db.Query("SELECT id, username, is_admin FROM panel_users")
+if err != nil {
+c.JSON(200, []interface{}{})
+return
+}
+defer rows.Close()
+
+var results []map[string]interface{}
+for rows.Next() {
+var id int
+var username string
+var isAdmin bool
+if err := rows.Scan(&id, &username, &isAdmin); err == nil {
+results = append(results, map[string]interface{}{"id": id, "username": username, "is_admin": isAdmin})
+}
+}
+if results == nil { results = []map[string]interface{}{} }
+c.JSON(200, results)
+})
+
 // Create a unified Panel User (System Account + Base Directories)
 			admin.POST("/accounts", func(c *gin.Context) {
 				var req struct {
