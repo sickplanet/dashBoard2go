@@ -27,6 +27,53 @@ func promptUser(reader *bufio.Reader, question, defaultVal string) string {
 	return input
 }
 
+// getPublicIP fetches the external IP
+func getPublicIP() string {
+	cmd := exec.Command("curl", "-s", "https://ifconfig.me")
+	out, err := cmd.Output()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	return string(out)
+}
+
+// setupLocalBindZone creates an authoritative zone for the FQDN
+func setupLocalBindZone(fqdn string) {
+	fmt.Println("Configuring local Bind9 Zone for " + fqdn)
+	ip := getPublicIP()
+
+	zoneFile := fmt.Sprintf("/etc/bind/db.%s", fqdn)
+	zoneData := fmt.Sprintf(`$TTL    604800
+@       IN      SOA     ns1.%s. admin.%s. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      ns1.%s.
+@       IN      NS      ns2.%s.
+@       IN      A       %s
+ns1     IN      A       %s
+ns2     IN      A       %s
+`, fqdn, fqdn, fqdn, fqdn, ip, ip, ip)
+
+	os.WriteFile(zoneFile, []byte(zoneData), 0644)
+
+	namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
+	if !strings.Contains(string(namedLocal), fqdn) {
+		f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
+		if err == nil {
+			f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", fqdn, fqdn))
+			f.Close()
+		}
+	}
+
+	exec.Command("systemctl", "restart", "bind9").Run()
+	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
+	fmt.Println("Bind9 reloaded successfully.")
+}
+
 func getCertForFQDN(fqdn string) error {
 	fmt.Println("Installing Certbot...")
 	oswrap.AptInstall("certbot")
@@ -59,21 +106,26 @@ func getCertForFQDN(fqdn string) error {
 }
 
 func main() {
+	reader := bufio.NewReader(os.Stdin)
+
 	// 0. Setup Guard
 	if _, err := os.Stat("config.json"); err == nil {
 		conf, _ := config.LoadConfig("config.json")
 		if conf != nil && conf.Installed {
-			fmt.Println("CRITICAL: dashBoard2go is already installed! Setup aborted.")
-			fmt.Println("To re-install, you must manually remove config.json.")
-			os.Exit(1)
+			fmt.Println("WARNING: dashBoard2go is already installed and config.json exists.")
+			fmt.Println("Development Mode active.")
+			mode := promptUser(reader, "Do you want to [1] EXIT, or [2] FIX BROKEN (Overwrite configs)?", "1")
+			if mode != "2" {
+				fmt.Println("Setup aborted.")
+				os.Exit(0)
+			}
+			fmt.Println("Proceeding with FIX BROKEN mode. Configurations will be overwritten...")
 		}
 	}
 
 	fmt.Println("==================================================")
 	fmt.Println("   dashBoard2go Interactive Setup (ISPConfig style) ")
 	fmt.Println("==================================================")
-
-	reader := bufio.NewReader(os.Stdin)
 
 	hostname := promptUser(reader, "Enter FQDN Hostname", "server1.example.com")
 	enableIPv6 := promptUser(reader, "Enable IPv6 Support?", "y")
@@ -89,7 +141,6 @@ func main() {
 
 	enableAutoSSL := promptUser(reader, "Automatically configure Let's Encrypt SSL for FQDN?", "y")
 	adminPass := promptUser(reader, "Enter Admin Password for Control Panel", "admin123")
-	
 
 	fmt.Println("\nConfiguration Summary:")
 	fmt.Printf("- Hostname: %s\n", hostname)
@@ -104,11 +155,23 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("\n[1/4] Applying Hostname...")
-	// Note: in a real install we use hostnamectl
+	fmt.Println("\n[1/5] Applying Hostname...")
+	exec.Command("hostnamectl", "set-hostname", hostname).Run()
+	os.WriteFile("/etc/hostname", []byte(hostname+"\n"), 0644)
+	shortHostname := strings.Split(hostname, ".")[0]
+	hostsEntry := fmt.Sprintf("127.0.1.1\t%s\t%s\n", hostname, shortHostname)
+	hostsFile, _ := os.ReadFile("/etc/hosts")
+	if !strings.Contains(string(hostsFile), hostname) {
+		f, _ := os.OpenFile("/etc/hosts", os.O_APPEND|os.O_WRONLY, 0600)
+		if f != nil {
+			f.WriteString(hostsEntry)
+			f.Close()
+		}
+	}
+
 	oswrap.AptUpdate()
 
-	fmt.Println("[2/4] Installing target stack packages...")
+	fmt.Println("[2/5] Installing target stack packages...")
 	packages := []string{}
 
 	if webServer == "nginx" {
@@ -142,8 +205,12 @@ func main() {
 		log.Println("If you are not running as root on Debian/Ubuntu, packages mock-failed.")
 	}
 
-	fmt.Println("[3/4] Configuring FQDN and AutoSSL...")
+	fmt.Println("[3/5] Configuring FQDN and AutoSSL...")
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
+
+	// Create authoritative zone before probing Let's encrypt
+	setupLocalBindZone(hostname)
+
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
 		if err != nil {
@@ -204,15 +271,15 @@ func main() {
                         password TEXT NOT NULL,
                         is_admin BOOLEAN DEFAULT 0
                 )`)
-// Encrypt using bcrypt
-                hashedPass, err := bcrypt.GenerateFromPassword([]byte(adminPass), bcrypt.DefaultCost)
-                if err != nil {
-                        log.Fatalf("Failed to hash admin password: %v", err)
-                }
+		// Encrypt using bcrypt
+		hashedPass, err := bcrypt.GenerateFromPassword([]byte(adminPass), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("Failed to hash admin password: %v", err)
+		}
 
-                _, _ = db.Exec(`INSERT INTO panel_users (username, password, is_admin) VALUES (?, ?, 1)
+		_, _ = db.Exec(`INSERT INTO panel_users (username, password, is_admin) VALUES (?, ?, 1)
                         ON CONFLICT(username) DO UPDATE SET password = excluded.password`,
-                        "admin", string(hashedPass))
+			"admin", string(hashedPass))
 		db.Close()
 	}
 
