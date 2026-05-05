@@ -39,8 +39,26 @@ dashBoard2go is actively developed and currently supports the following enterpri
 
 ## Installation
 
-1. Log into your VPS as `root`.
-2. Clone the repository and run the bootstrapper:
+For general users, we recommend downloading the pre-compiled binary release to save time.
+
+1. Log into your fresh VPS as `root`.
+2. Download the latest release from GitHub and run the setup:
+
+```bash
+apt-get update -y && apt-get install -y wget unzip
+wget $(curl -s https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest | grep browser_download_url | cut -d '"' -f 4) -O dashboard2go.zip
+unzip dashboard2go.zip
+cd dashBoard2go
+cp dashboard2go-* /usr/local/bin/
+cp -r web /usr/local/bin/
+cd /usr/local/bin
+chmod +x dashboard2go-*
+./dashboard2go-setup
+```
+
+### Installation from Source (Developers)
+
+If you wish to compile from source or contribute to the project:
 
 ```bash
 apt-get update -y && apt-get install -y git
@@ -50,7 +68,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-During installation, the Go compiler will automatically compile the four core components (`core`, `setup`, `watchdog`, `worker`), move the Web UI to standard paths, inject base templates, create the SQLite databases, and lock out further installations.
+During installation, the setup script will interactively configure your VPS, establish base templates, configure UFW, create SQLite databases, and set up systemd services.
 
 ## Architecture
 

@@ -1,124 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Area | dashBoard2go</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/shared/style.css">
+    <title>Admin Dashboard | dashBoard2go</title>
+    <!-- Bootstrap CSS (Dark Mode Default) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #121212; }
+        .sidebar { min-height: 100vh; background-color: #1a1a1a; padding: 20px; }
+        .sidebar a { color: #adb5bd; text-decoration: none; padding: 10px; display: block; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar a:hover, .sidebar a.active { background-color: #0d6efd; color: white; }
+        .card { background-color: #1e1e1e; border: 1px solid #333; margin-bottom: 20px; }
+        .card-header { border-bottom: 1px solid #333; background-color: rgba(0,0,0,0.2); }
+    </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <h2>dashBoard2go</h2>
-        <ul>
-            <li><a href="#" class="active">Monitoring</a></li>
-            <li><a href="#">System Users</a></li>
-            <li><a href="#">System Config</a></li>
-            <li><a href="/user">↳ Switch to User</a></li>
-        </ul>
-    </aside>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <h4 class="text-white text-center mb-4">dashBoard2go</h4>
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link active" href="#dashboard" data-bs-toggle="pill"><i class="bi bi-speedometer2 me-2"></i> Server Status</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="pill"><i class="bi bi-people me-2"></i> Users</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#php" data-bs-toggle="pill"><i class="bi bi-filetype-php me-2"></i> PHP Versions</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#firewall" data-bs-toggle="pill"><i class="bi bi-shield-lock me-2"></i> Firewall</a></li>
+                        <li class="nav-item mt-4"><a class="nav-link text-warning" href="/user"><i class="bi bi-arrow-return-right me-2"></i> Switch to User UI</a></li>
+                    </ul>
+                </div>
+            </nav>
 
-    <main class="main-content">
-        <header>
-            <h1>Server Monitoring</h1>
-            <div class="user-info">
-                <span>Welcome, Root Admin</span>
-                <button onclick="toggleTheme()">Toggle Theme</button>
-            </div>
-        </header>
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom border-secondary">
+                    <h1 class="h2 text-white">Administration</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <span class="text-secondary mt-2 me-3">Logged in as Root Admin</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                    </div>
+                </div>
 
-        <div class="grid-2">
-            <!-- Services Overview -->
-            <div class="card">
-                <h3>Stack Health Status</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="servicesList">
-                        <tr><td colspan="2">Loading services...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+                <div class="tab-content" id="v-pills-tabContent">
+                    
+                    <!-- Dashboard / Status Tab -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card p-3 text-center">
+                                    <h5 class="card-title text-secondary">CPU Load</h5>
+                                    <h2 class="text-primary" id="cpuLoad">0%</h2>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card p-3 text-center">
+                                    <h5 class="card-title text-secondary">RAM Usage</h5>
+                                    <h2 class="text-success" id="ramUsage">0 / 0 GB</h2>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card p-3 text-center">
+                                    <h5 class="card-title text-secondary">Disk Space</h5>
+                                    <h2 class="text-info" id="diskSpace">0% Free</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">System Information</div>
+                                    <div class="card-body">
+                                        <pre id="sysInfo" class="mb-0 text-muted">Loading hardware info...</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Global User Pool Creation Form -->
-            <div class="card">
-                <h3>Create System User</h3>
-                <form id="createUserForm">
-                    <input type="text" id="username" placeholder="Username" required>
-                    <input type="password" id="password" placeholder="Password" required>
-                    <input type="number" id="quota" placeholder="Quota MB (0 for unlimited)" value="0">
-                    <button type="submit">Create Storage Sandbox</button>
-                </form>
-                <div id="userResponse" style="margin-top: 15px; font-size: 14px;"></div>
-            </div>
+                    <!-- Users Tab -->
+                    <div class="tab-pane fade" id="users">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>System Users</span>
+                                <button class="btn btn-sm btn-primary">Add User</button>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+                                    <tbody id="usersTable">
+                                        <!-- Populated via API -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PHP Tab -->
+                    <div class="tab-pane fade" id="php">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <span>PHP Version Manager</span>
+                                <button class="btn btn-sm btn-success">Install New Version</button>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-dark">
+                                    <thead><tr><th>Version</th><th>Status</th><th>Default</th><th>Actions</th></tr></thead>
+                                    <tbody id="phpTable">
+                                        <tr><td>PHP 8.2</td><td><span class="badge bg-success">Installed</span></td><td><span class="badge bg-primary">Yes</span></td><td><button class="btn btn-sm btn-outline-light">Set Default</button></td></tr>
+                                        <tr><td>PHP 8.1</td><td><span class="badge bg-secondary">Not Installed</span></td><td>-</td><td><button class="btn btn-sm btn-primary">Install</button></td></tr>
+                                        <tr><td>PHP 7.4</td><td><span class="badge bg-success">Installed</span></td><td></td><td><button class="btn btn-sm btn-danger">Remove</button></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Firewall Tab -->
+                    <div class="tab-pane fade" id="firewall">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <span>UFW Rules</span>
+                                <button class="btn btn-sm btn-primary">Add Rule</button>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-dark">
+                                    <thead><tr><th>Port / Protocol</th><th>Action</th><th>Description</th></tr></thead>
+                                    <tbody id="fwTable">
+                                        <tr><td>80/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTP Web Traffic</td></tr>
+                                        <tr><td>443/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>HTTPS Web Traffic</td></tr>
+                                        <tr><td>8080/tcp</td><td><span class="badge bg-success">ALLOW</span></td><td>Dashboard Panel</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
         </div>
-    </main>
+    </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Fetch Services from custom dashboard2go Core API
-        async function fetchServices() {
+        async function fetchStats() {
             try {
-                const res = await fetch('/api/v1/admin/services');
-                const data = await res.json();
-                
+                // Mock API hit for server stats
+                // const res = await fetch('/api/v1/admin/stats');
+                // const data = await res.json();
+                document.getElementById('cpuLoad').innerText = Math.floor(Math.random() * 20 + 5) + "%";
+                document.getElementById('ramUsage').innerText = "1.2 / 4.0 GB";
+                document.getElementById('diskSpace').innerText = "45% Free";
+                document.getElementById('sysInfo').innerText = "OS: Debian 13 (Bookworm)\nKernel: 6.1.0-9-amd64\nUptime: 14 days, 3 hours\nArchitecture: x86_64";
+            } catch(e) {}
+        }
+        
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/v1/admin/users');
+                const users = await res.json();
                 let html = '';
-                data.forEach(srv => {
-                    const statusClass = srv.active ? 'active' : 'inactive';
-                    const statusText = srv.active ? 'ACTIVE' : 'OFFLINE';
-                    // We only want to show the underlying service name
-                    const sname = srv.service.split('.service')[0];
-
+                users.forEach(u => {
                     html += `<tr>
-                        <td><strong>${sname}</strong></td>
-                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.is_admin ? '<span class="badge bg-danger">Admin</span>' : '<span class="badge bg-secondary">User</span>'}</td>
+                        <td>
+                            ${!u.is_admin ? `<button class="btn btn-sm btn-warning" onclick="loginAs('${u.username}')">Login as User</button>` : ''}
+                        </td>
                     </tr>`;
                 });
-                document.getElementById('servicesList').innerHTML = html;
-            } catch (e) {
-                document.getElementById('servicesList').innerHTML = `<tr><td colspan="2" style="color:var(--danger-color)">API Connection Lost.</td></tr>`;
-            }
+                document.getElementById('usersTable').innerHTML = html;
+            } catch(e) {}
         }
 
-        // Form Submit Handler
-        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.innerText = "Provisioning...";
-            
-            const payload = {
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value,
-                quota_mb: parseInt(document.getElementById('quota').value)
-            };
-
-            try {
-                const res = await fetch('/api/v1/admin/accounts', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                document.getElementById('userResponse').innerHTML = `<span style="color: var(--success-color)">Success! Job ID: ${data.job_id} <br> Path: ${data.system_path}</span>`;
-                e.target.reset();
-            } catch (err) {
-                 document.getElementById('userResponse').innerHTML = `<span style="color: var(--danger-color)">Failed to inject into Job Queue.</span>`;
-            }
-            btn.innerText = "Create Storage Sandbox";
-        });
-
-        // Theme Toggle persistence
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const target = current === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', target);
+        async function loginAs(username) {
+            alert(`Impersonating ${username}. Redirecting to User Dashboard...`);
+            // Store admin state so we can return
+            localStorage.setItem('adminReturn', 'true');
+            window.location.href = `/api/v1/auth/impersonate?user=${username}`;
         }
 
-        fetchServices();
-        setInterval(fetchServices, 10000); // Polling for live stack health
+        function logout() {
+            document.cookie = "dashboard_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.href = '/login';
+        }
+
+        setInterval(fetchStats, 5000);
+        fetchStats();
+        fetchUsers();
     </script>
 </body>
 </html>
