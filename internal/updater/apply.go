@@ -1,17 +1,17 @@
 package updater
 
 import (
-"fmt"
-"io/ioutil"
-"log"
-"os/exec"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os/exec"
 )
 
 // ApplyUpdate writes a decoupled script and runs it in the background
 func ApplyUpdate(targetVersion string) error {
-scriptPath := "/tmp/dashboard2go-apply-update.sh"
+	scriptPath := "/tmp/dashboard2go-apply-update.sh"
 
-scriptContent := fmt.Sprintf(`#!/bin/bash
+	scriptContent := fmt.Sprintf(`#!/bin/bash
 set -e
 
 LOG_PUBLIC="/var/www/html/dashboard2go_update.log"
@@ -21,8 +21,8 @@ touch $LOG_PUBLIC || true
 chmod 644 $LOG_PUBLIC || true
 
 log() {
-    echo "[$(date +'%H:%M:%S')] $1" | tee -a $LOG_TMP
-    echo "[$(date +'%H:%M:%S')] $1" >> $LOG_PUBLIC || true
+    echo "[$(date +'%%H:%%M:%%S')] $1" | tee -a $LOG_TMP
+    echo "[$(date +'%%H:%%M:%%S')] $1" >> $LOG_PUBLIC || true
 }
 
 log "--- dashBoard2go Updater Triggered for %s ---"
@@ -56,16 +56,16 @@ log "Update completed successfully. Target payload active."
 rm -f /tmp/dashboard2go-apply-update.sh
 `, targetVersion, targetVersion)
 
-err := ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
-if err != nil {
-return fmt.Errorf("failed writing decoupled update script: %w", err)
-}
+	err := ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	if err != nil {
+		return fmt.Errorf("failed writing decoupled update script: %w", err)
+	}
 
-log.Printf("[Updater] Launching detached update script: %s\n", scriptPath)
-cmd := exec.Command("nohup", scriptPath)
-if err := cmd.Start(); err != nil {
-return fmt.Errorf("failed starting decoupled update script: %w", err)
-}
+	log.Printf("[Updater] Launching detached update script: %s\n", scriptPath)
+	cmd := exec.Command("nohup", scriptPath)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed starting decoupled update script: %w", err)
+	}
 
-return nil
+	return nil
 }
