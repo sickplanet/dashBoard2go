@@ -10,7 +10,9 @@ import (
 
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/queue"
-	"dashBoard2go/internal/wrappers"
+	"dashBoard2go/internal/wrappers/ftp"
+	"dashBoard2go/internal/wrappers/mail"
+	"dashBoard2go/internal/wrappers/webserver"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -88,8 +90,8 @@ func executeJob(db *sql.DB, job *queue.Job) error {
 		if err := json.Unmarshal([]byte(job.Payload), &p); err != nil {
 			return fmt.Errorf("invalid payload: %v", err)
 		}
-		ftpWrapper := wrappers.NewPureFTPdWrapper("vmail", "vmail")
-		user := &wrappers.FTPUser{
+		ftpWrapper := ftp.NewPureFTPdWrapper("vmail", "vmail")
+		user := &ftp.FTPUser{
 			Username: p.Username,
 			Password: p.Password,
 			QuotaMB:  p.Quota,
@@ -107,13 +109,13 @@ func executeJob(db *sql.DB, job *queue.Job) error {
 			return fmt.Errorf("invalid payload: %v", err)
 		}
 
-		vhostConfig := wrappers.VhostConfig{
+		vhostConfig := webserver.VhostConfig{
 			Domain:       p.Domain,
 			DocumentRoot: fmt.Sprintf("/home/dashboard2go/users/%s/web/%s/public_html", p.Username, p.Domain),
 		}
 
 		if p.Engine == "nginx" {
-			w := wrappers.NewNginxWrapper()
+			w := webserver.NewNginxWrapper()
 			err := w.CreateVhost(vhostConfig)
 			if err == nil {
 				w.EnableVhost(p.Domain)
@@ -121,7 +123,7 @@ func executeJob(db *sql.DB, job *queue.Job) error {
 			}
 			return err
 		} else {
-			w := wrappers.NewApacheWrapper()
+			w := webserver.NewApacheWrapper()
 			err := w.CreateVhost(vhostConfig)
 			if err == nil {
 				w.EnableVhost(p.Domain)
@@ -137,7 +139,7 @@ func executeJob(db *sql.DB, job *queue.Job) error {
 		if err := json.Unmarshal([]byte(job.Payload), &p); err != nil {
 			return err
 		}
-		w := wrappers.NewPostfixDovecotWrapper(db)
+		w := mail.NewPostfixDovecotWrapper(db)
 		return w.CreateMailDomain(p.Domain)
 
 	default:

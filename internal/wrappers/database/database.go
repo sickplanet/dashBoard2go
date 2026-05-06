@@ -1,4 +1,4 @@
-package wrappers
+package database
 
 // DatabaseConfig holds standard auth config for connection
 type DatabaseConfig struct {

@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,6 +17,8 @@ import (
 
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/oswrap"
+	"dashBoard2go/internal/wrappers/dns"
+	"dashBoard2go/internal/wrappers/ssl"
 )
 
 func promptUser(reader *bufio.Reader, question, defaultVal string) string {
@@ -43,40 +47,62 @@ func createMicroZone(domain, ns1, ns2, ip string) {
 	if domain == "" {
 		return
 	}
-	zoneFile := fmt.Sprintf("/etc/bind/db.%s", domain)
-	zoneData := fmt.Sprintf(`$TTL    604800
-@       IN      SOA     %s. admin.%s. (
-                              2         ; Serial
-                         604800         ; Refresh
-                          86400         ; Retry
-                        2419200         ; Expire
-                         604800 )       ; Negative Cache TTL
-;
-@       IN      NS      %s.
-@       IN      NS      %s.
-@       IN      A       %s
-`, ns1, domain, ns1, ns2, ip)
 
-	os.WriteFile(zoneFile, []byte(zoneData), 0644)
-
+	// Ensure the dashboard configuration is included globally
 	namedLocal, _ := os.ReadFile("/etc/bind/named.conf.local")
-	if !strings.Contains(string(namedLocal), fmt.Sprintf("zone \"%s\"", domain)) {
+	if !strings.Contains(string(namedLocal), "/etc/bind/named.conf.dashboard") {
 		f, err := os.OpenFile("/etc/bind/named.conf.local", os.O_APPEND|os.O_WRONLY, 0644)
 		if err == nil {
-			f.WriteString(fmt.Sprintf("\nzone \"%s\" {\n\ttype master;\n\tfile \"/etc/bind/db.%s\";\n};\n", domain, domain))
+			f.WriteString("\ninclude \"/etc/bind/named.conf.dashboard\";\n")
 			f.Close()
 		}
 	}
+
+	b9 := dns.NewBind9Wrapper()
+	cfg := dns.ZoneConfig{
+		Domain:     domain,
+		AdminEmail: "admin." + domain,
+		PrimaryIP:  ip,
+		Nameserver: ns1,
+	}
+
+	// 1. Create the base zone & entry
+	_ = b9.CreateZone(cfg)
+
+	// 2. Add extra NS records explicitly via our wrapper
+	if ns2 != "" && ns1 != ns2 {
+		b9.AddRecord(domain, dns.DNSRecord{
+			Type:  "NS",
+			Name:  "@",
+			Value: ns2 + ".",
+			TTL:   86400,
+		})
+	}
 }
 
-// setupLocalBindZone creates authoritative zones for the FQDN and the Nameservers exclusively.
-func setupLocalBindZone(fqdn, ns1, ns2 string) {
-	fmt.Println("Configuring explicit local Bind9 Zones for FQDN & Nameservers")
-	ip := getPublicIP()
+// setupLocalBindZone creates authoritative zones for the Base Domain, FQDN, and Nameservers exclusively.
+func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
+	fmt.Println("Configuring explicit local Bind9 Zones for Domains & Nameservers")
 
-	createMicroZone(fqdn, ns1, ns2, ip)
-	createMicroZone(ns1, ns1, ns2, ip)
-	createMicroZone(ns2, ns1, ns2, ip)
+	createMicroZone(baseDomain, ns1, ns2, ip1)
+	if baseDomain != fqdn {
+		createMicroZone(fqdn, ns1, ns2, ip1)
+	}
+	createMicroZone(ns1, ns1, ns2, ip1)
+	if ns1 != ns2 {
+		createMicroZone(ns2, ns1, ns2, ip2)
+	}
+
+	// Ensure BIND listens publicly and allows external queries so Let's Encrypt can resolve us
+	optionsContent := `options {
+	directory "/var/cache/bind";
+	dnssec-validation auto;
+	listen-on-v6 { any; };
+	listen-on { any; };
+	allow-query { any; };
+};
+`
+	os.WriteFile("/etc/bind/named.conf.options", []byte(optionsContent), 0644)
 
 	exec.Command("systemctl", "restart", "bind9").Run()
 	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
@@ -84,6 +110,22 @@ func setupLocalBindZone(fqdn, ns1, ns2 string) {
 }
 
 func getCertForFQDN(fqdn string) error {
+	fmt.Printf("Pre-flight Global DNS Resolution check for %s...\n", fqdn)
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return net.Dial("udp", "8.8.8.8:53")
+		},
+	}
+
+	// Fast lookup via Google DNS to confirm domain is active globally.
+	ips, err := r.LookupIPAddr(context.Background(), fqdn)
+	if err != nil || len(ips) == 0 {
+		return fmt.Errorf("WARNING: Global DNS resolution (Google 8.8.8.8) failed for %s. The domain is not globally propagated or valid yet: %v", fqdn, err)
+	}
+
+	fmt.Printf("Global DNS validated. %s resolved to %v\n", fqdn, ips)
+
 	fmt.Println("Installing Certbot...")
 	oswrap.AptInstall("certbot")
 
@@ -105,16 +147,10 @@ func getCertForFQDN(fqdn string) error {
 	exec.Command("systemctl", "stop", "nginx").Run()
 	exec.Command("systemctl", "stop", "apache2").Run()
 
-	cmd := exec.Command("certbot", "certonly",
-		"--standalone", // Use standalone during initial setup before Nginx/Apache are fully configured
-		"-d", fqdn,
-		"--non-interactive",
-		"--agree-tos",
-		"--register-unsafely-without-email",
-	)
-	out, err := cmd.CombinedOutput()
+	certManager := ssl.NewCertbotManager("standalone")
+	err = certManager.ObtainCertStandalone(context.Background(), fqdn)
 	if err != nil {
-		return fmt.Errorf("certbot failed: %s - %v", string(out), err)
+		return fmt.Errorf("certbot wrapper failed: %v", err)
 	}
 	return nil
 }
@@ -142,8 +178,15 @@ func main() {
 	fmt.Println("==================================================")
 
 	hostname := promptUser(reader, "Enter FQDN Hostname", "server1.example.com")
+	baseDomain := promptUser(reader, "Enter Base Domain Name (e.g. domain.ro / example.com)", "example.com")
 	ns1 := promptUser(reader, "Enter Primary Nameserver", "ns1.example.com")
 	ns2 := promptUser(reader, "Enter Secondary Nameserver", "ns2.example.com")
+	detectedIP := getPublicIP()
+	serverIP1 := promptUser(reader, "Enter Primary Server IP (for FQDN & NS1)", detectedIP)
+	serverIP2 := promptUser(reader, "Enter Secondary Server IP (for NS2, leave blank if same as IP1)", serverIP1)
+	if serverIP2 == "" {
+		serverIP2 = serverIP1
+	}
 	enableIPv6 := promptUser(reader, "Enable IPv6 Support?", "y")
 	webServer := promptUser(reader, "Select Web Server (apache/nginx)", "nginx")
 	dbServer := promptUser(reader, "Select Postgres Database additionally? (mariadb is mandatory)", "n")
@@ -243,7 +286,7 @@ func main() {
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
 
 	// Create authoritative zone before probing Let's encrypt
-	setupLocalBindZone(hostname, ns1, ns2)
+	setupLocalBindZone(hostname, baseDomain, ns1, ns2, serverIP1, serverIP2)
 
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)

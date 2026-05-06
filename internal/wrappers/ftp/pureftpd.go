@@ -1,4 +1,4 @@
-package wrappers
+package ftp
 
 import (
 	"context"

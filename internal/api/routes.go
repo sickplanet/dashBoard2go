@@ -9,7 +9,7 @@ import (
 
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/queue"
-	"dashBoard2go/internal/wrappers"
+	"dashBoard2go/internal/wrappers/firewall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -130,14 +130,14 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 
 			admin.GET("/firewall", func(c *gin.Context) {
-				ufw := wrappers.NewUFWWrapper(db)
+				ufw := firewall.NewUFWWrapper(db)
 				systemRules, err := ufw.GetSystemRules(c.Request.Context())
 				if err != nil {
-					systemRules = []wrappers.FirewallRule{}
+					systemRules = []firewall.FirewallRule{}
 				}
 				dbRules, err := ufw.GetDBRules(c.Request.Context())
 				if err != nil {
-					dbRules = []wrappers.FirewallRule{}
+					dbRules = []firewall.FirewallRule{}
 				}
 				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
 			})

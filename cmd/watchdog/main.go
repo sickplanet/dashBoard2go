@@ -9,7 +9,7 @@ import (
 
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/oswrap"
-	"dashBoard2go/internal/wrappers"
+	"dashBoard2go/internal/wrappers/firewall"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -32,7 +32,7 @@ func main() {
 		"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot", "amavis", "pure-ftpd", "ufw",
 	}
 
-	ufwWrapper := wrappers.NewUFWWrapper(nil)
+	ufwWrapper := firewall.NewUFWWrapper(nil)
 
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
