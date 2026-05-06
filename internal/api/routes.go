@@ -166,7 +166,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 
 			// Create a unified Panel User (System Account + Base Directories)
-			admin.POST("/accounts", func(c *gin.Context) {
+			admin.POST("/users", func(c *gin.Context) {
 				var req struct {
 					Username string `json:"username"`
 					Password string `json:"password"`
@@ -265,7 +265,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 		user := apiGroup.Group("/user")
 		{
 			// Add Domain/Vhost
-			user.POST("/vhost", func(c *gin.Context) {
+			user.POST("/domains", func(c *gin.Context) {
 				var req struct {
 					Domain   string `json:"domain"`
 					Engine   string `json:"engine"`
