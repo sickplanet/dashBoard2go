@@ -77,6 +77,14 @@ func (b *Bind9Wrapper) CreateZone(config ZoneConfig) error {
 }
 
 func (b *Bind9Wrapper) registerZoneConfig(domain, zoneFile string) error {
+	// Prevent duplicate zone registrations
+	content, err := os.ReadFile(b.ConfigFilePath)
+	if err == nil {
+		if strings.Contains(string(content), fmt.Sprintf(`zone "%s" {`, domain)) {
+			return nil // Zone already registered
+		}
+	}
+
 	configEntry := fmt.Sprintf("\nzone \"%s\" {\n    type master;\n    file \"%s\";\n    allow-transfer { any; };\n};\n", domain, zoneFile)
 
 	f, err := os.OpenFile(b.ConfigFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
