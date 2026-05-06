@@ -369,6 +369,11 @@ func main() {
 	// Create authoritative zone before probing Let's encrypt
 	setupLocalBindZone(hostname, baseDomain, ns1, ns2, serverIP1, serverIP2, serverIPv6_1, serverIPv6_2)
 
+	// Ensure BIND9 actually reloads the zone file and has time to bind UDP port 53 before Let's Encrypt calls
+	fmt.Println("Reloading BIND9 and waiting 5 seconds for DNS propagation over localhost...")
+	exec.Command("systemctl", "restart", "bind9").Run()
+	time.Sleep(5 * time.Second)
+
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
 		if err != nil {
