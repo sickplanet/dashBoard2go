@@ -9,7 +9,7 @@ import (
 
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/queue"
-	"dashBoard2go/internal/wrappers"
+	"dashBoard2go/internal/wrappers/firewall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -130,14 +130,14 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 
 			admin.GET("/firewall", func(c *gin.Context) {
-				ufw := wrappers.NewUFWWrapper(db)
+				ufw := firewall.NewUFWWrapper(db)
 				systemRules, err := ufw.GetSystemRules(c.Request.Context())
 				if err != nil {
-					systemRules = []wrappers.FirewallRule{}
+					systemRules = []firewall.FirewallRule{}
 				}
 				dbRules, err := ufw.GetDBRules(c.Request.Context())
 				if err != nil {
-					dbRules = []wrappers.FirewallRule{}
+					dbRules = []firewall.FirewallRule{}
 				}
 				c.JSON(200, gin.H{"rules": systemRules, "sqlRules": dbRules})
 			})
@@ -166,7 +166,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 
 			// Create a unified Panel User (System Account + Base Directories)
-			admin.POST("/accounts", func(c *gin.Context) {
+			admin.POST("/users", func(c *gin.Context) {
 				var req struct {
 					Username string `json:"username"`
 					Password string `json:"password"`
@@ -265,7 +265,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 		user := apiGroup.Group("/user")
 		{
 			// Add Domain/Vhost
-			user.POST("/vhost", func(c *gin.Context) {
+			user.POST("/domains", func(c *gin.Context) {
 				var req struct {
 					Domain   string `json:"domain"`
 					Engine   string `json:"engine"`

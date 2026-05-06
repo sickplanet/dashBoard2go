@@ -1,4 +1,4 @@
-package wrappers
+package database
 
 import (
 	"database/sql"

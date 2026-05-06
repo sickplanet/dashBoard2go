@@ -27,6 +27,8 @@
         </form>
     </div>
 
+    <script src="/js/core.js"></script>
+    <script src="/js/core.js"></script>
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -39,26 +41,15 @@
             };
 
             try {
-                const res = await fetch('/api/v1/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
+                const data = await apiFetch('/api/v1/auth/login', 'POST', payload);
                 
-                const data = await res.json();
-                
-                if (res.ok) {
-                    if (data.is_admin) {
-                        window.location.href = '/admin';
-                    } else {
-                        window.location.href = '/user';
-                    }
+                if (data.is_admin) {
+                    window.location.href = '/admin';
                 } else {
-                    document.getElementById('errorMsg').innerText = data.error || "Authentication failed";
-                    btn.innerText = "Login";
+                    window.location.href = '/user';
                 }
             } catch (err) {
-                document.getElementById('errorMsg').innerText = "Network Error";
+                document.getElementById('errorMsg').innerText = err.message || "Network Error";
                 btn.innerText = "Login";
             }
         });

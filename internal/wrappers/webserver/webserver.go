@@ -1,4 +1,4 @@
-package wrappers
+package webserver
 
 // VhostConfig defines the configuration parameters for a web virtual host
 type VhostConfig struct {

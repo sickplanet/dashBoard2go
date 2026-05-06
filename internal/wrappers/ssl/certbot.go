@@ -1,26 +1,10 @@
-package wrappers
+package ssl
 
 import (
 	"context"
 	"fmt"
 	"os/exec"
 )
-
-// SSLConfig represents the SSL preferences for a domain or subdomain
-type SSLConfig struct {
-	Domain   string `json:"domain"`
-	Enabled  bool   `json:"enabled"`
-	Provider string `json:"provider"`  // "letsencrypt" or "custom"
-	CertPath string `json:"cert_path"` // If custom or generated
-	KeyPath  string `json:"key_path"`  // If custom or generated
-}
-
-// SSLManager defines interface for managing SSL certificates
-type SSLManager interface {
-	ConfigureDomain(ctx context.Context, config *SSLConfig) error
-	RevokeDomain(ctx context.Context, domain string) error
-	GetStatus(ctx context.Context, domain string) (*SSLConfig, error)
-}
 
 // CertbotManager implements Let's Encrypt integration via certbot
 type CertbotManager struct {
@@ -87,4 +71,34 @@ func (c *CertbotManager) GetStatus(ctx context.Context, domain string) (*SSLConf
 		CertPath: fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", domain),
 		KeyPath:  fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", domain),
 	}, nil
+}
+
+func (c *CertbotManager) ObtainCertStandalone(ctx context.Context, domain string) error {
+	cmd := exec.CommandContext(ctx, "certbot", "certonly",
+		"--standalone",
+		"-d", domain,
+		"--non-interactive",
+		"--agree-tos",
+		"--register-unsafely-without-email",
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("certbot standalone failed for %s: %v\nOutput: %s", domain, err, string(out))
+	}
+	return nil
+}
+
+func (c *CertbotManager) ObtainCertWebroot(ctx context.Context, domain string) error {
+	cmd := exec.CommandContext(ctx, "certbot", "certonly",
+		"--webroot", "-w", "/var/www/acme-challenge",
+		"-d", domain,
+		"--non-interactive",
+		"--agree-tos",
+		"--register-unsafely-without-email",
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("certbot webroot failed for %s: %v\nOutput: %s", domain, err, string(out))
+	}
+	return nil
 }

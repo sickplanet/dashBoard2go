@@ -1,4 +1,4 @@
-package wrappers
+package dns
 
 // ZoneConfig holds the base configuration for a new DNS zone
 type ZoneConfig struct {

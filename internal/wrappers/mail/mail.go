@@ -1,4 +1,4 @@
-package wrappers
+package mail
 
 // MailboxConfig defines settings for a specific email account
 type MailboxConfig struct {

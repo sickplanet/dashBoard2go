@@ -1,4 +1,4 @@
-package wrappers
+package dns
 
 import (
 	"bytes"
