@@ -30,6 +30,8 @@
                         <li class="nav-item"><a class="nav-link" href="#email" data-bs-toggle="pill"><i class="bi bi-envelope me-2"></i> Email</a></li>
                         <li class="nav-item"><a class="nav-link" href="#php" data-bs-toggle="pill"><i class="bi bi-filetype-php me-2"></i> PHP Versions</a></li>
                         <li class="nav-item"><a class="nav-link" href="#firewall" data-bs-toggle="pill"><i class="bi bi-shield-lock me-2"></i> Firewall</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#dns" data-bs-toggle="pill"><i class="bi bi-diagram-3 me-2"></i> DNS</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#system" data-bs-toggle="pill"><i class="bi bi-cpu me-2"></i> System Context</a></li>
                         <li class="nav-item mt-4"><a class="nav-link text-warning" href="/user"><i class="bi bi-arrow-return-right me-2"></i> Switch to User UI</a></li>
                         <li class="nav-item mt-2 d-none" id="updateMenu"><a class="nav-link text-success fw-bold" href="#" onclick="alert('TODO: Connect this button to trigger the dashboard2go-updater worker command or shell script via API!')"><i class="bi bi-cloud-download me-2"></i> Update Available <span class="badge bg-danger ms-2" id="updateBadge"></span></a></li>
                     </ul>
@@ -136,8 +138,14 @@
                     <div class="tab-pane fade" id="firewall">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between">
-                                <span>UFW Rules</span>
-                                <button class="btn btn-sm btn-primary">Add Rule</button>
+                                <span>Firewall Rules <span id="fwStatusBadge" class="badge bg-secondary ms-2">Loading...</span></span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-info me-2 d-none" id="fwInstallUfwBtn" onclick="installFirewall('ufw')">Install UFW</button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 d-none" id="fwInstallNftBtn" onclick="installFirewall('nftables')">Install NFTables</button>
+                                    <button class="btn btn-sm btn-success me-2 d-none" id="fwEnableBtn" onclick="toggleFirewall('enable')">Enable</button>
+                                    <button class="btn btn-sm btn-danger me-2 d-none" id="fwDisableBtn" onclick="toggleFirewall('disable')">Disable</button>
+                                    <button class="btn btn-sm btn-primary">Add Rule</button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <table class="table table-dark">
@@ -197,6 +205,220 @@
                         </div>
                     </div>
 
+
+                    <!-- DNS Tab -->
+                    <div class="tab-pane fade" id="dns">
+                        <div class="row">
+                            <!-- Left Sub-menu column -->
+                            <div class="col-md-3 border-end border-secondary">
+                                <ul class="nav flex-column nav-pills" id="dns-submenu" role="tablist" aria-orientation="vertical">
+                                    <li class="nav-item"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">DNS</span></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-wizard" data-bs-toggle="pill">DNS-Wizard</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-add-zone" data-bs-toggle="pill">Add DNS-Zone</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-zone-import" data-bs-toggle="pill">Zone-File Import</a></li>
+                                    <li class="nav-item"><a class="nav-link active" href="#dns-templates" data-bs-toggle="pill">Templates</a></li>
+                                    <li class="nav-item mt-3"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">Secondary DNS</span></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-secondary-zones" data-bs-toggle="pill">Secondary DNS-Zones</a></li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Right Main Content column -->
+                            <div class="col-md-9 tab-content">
+                                <!-- Templates Panel -->
+                                <div class="tab-pane fade show active" id="dns-templates">
+                                    <h4 class="text-white mb-3">DNS Wizard template</h4>
+                                    <div class="card bg-dark border-secondary p-3">
+                                        <div class="card-header bg-dark text-white border-bottom border-secondary px-0">
+                                            <h6 class="mb-0">DNS Template</h6>
+                                        </div>
+                                        <div class="card-body px-0">
+                                            <form id="dnsTemplateForm">
+                                                <div class="row mb-3 align-items-center">
+                                                    <label class="col-sm-2 col-form-label text-end text-light">Name:</label>
+                                                    <div class="col-sm-10">
+                                                        <input type="text" class="form-control bg-dark border-secondary text-white" id="dnsTemplateName" value="Default+IPv6">
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3 align-items-center">
+                                                    <label class="col-sm-2 col-form-label text-end text-light">Fields:</label>
+                                                    <div class="col-sm-10 d-flex flex-wrap gap-3 text-light mt-1">
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDomain" checked><label class="form-check-label" for="fieldDomain">Domain</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldIP" checked><label class="form-check-label" for="fieldIP">IP Address</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldIPv6" checked><label class="form-check-label" for="fieldIPv6">IPv6 Address</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldNS1" checked><label class="form-check-label" for="fieldNS1">NS 1</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldNS2" checked><label class="form-check-label" for="fieldNS2">NS 2</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldEmail" checked><label class="form-check-label" for="fieldEmail">Email</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDKIM" checked><label class="form-check-label" for="fieldDKIM">DKIM</label></div>
+                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDNSSEC" checked><label class="form-check-label" for="fieldDNSSEC">DNSSEC</label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <label class="col-sm-2 col-form-label text-end text-light">Template:</label>
+                                                    <div class="col-sm-10">
+                                                        <textarea class="form-control bg-dark border-secondary text-white font-monospace" id="dnsTemplateBody" rows="12">
+[ZONE]
+origin={DOMAIN}.
+ns={NS1}.
+mbox={EMAIL}.
+refresh=7200
+retry=540
+expire=604800
+minimum=3600
+ttl=3600
+
+[DNS_RECORDS]
+A|{DOMAIN}.|{IP}|0|3600
+A|www|{IP}|0|3600
+A|mail|{IP}|0|3600
+AAAA|{DOMAIN}.|{IPV6}|0|3600
+AAAA|www|{IPV6}|0|3600
+AAAA|mail|{IPV6}|0|3600
+NS|{DOMAIN}.|{NS1}.|0|3600
+NS|{DOMAIN}.|{NS2}.|0|3600
+MX|{DOMAIN}.|mail.{DOMAIN}.|10|3600
+TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
+                                                        <small class="text-info mt-1 d-block">DNS Placeholder: {DOMAIN}, {IP}, {IPV6}, {NS1}, {NS2}, {EMAIL}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3 align-items-center">
+                                                    <label class="col-sm-2 col-form-label text-end text-light">Visible:</label>
+                                                    <div class="col-sm-10">
+                                                        <input class="form-check-input ms-0" type="checkbox" id="dnsTemplateVisible" checked>
+                                                    </div>
+                                                </div>
+                                                <div class="row border-top border-secondary pt-3 mt-4">
+                                                    <div class="col-sm-10 offset-sm-2 text-end">
+                                                        <button type="button" class="btn btn-success me-2" onclick="saveDNSTemplate()">Save</button>
+                                                        <button type="button" class="btn btn-light" onclick="alert('TODO: Implement DNS Template cancel/back event')">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="dns-wizard">
+                                    <h4 class="text-white mb-3">DNS Wizard</h4>
+                                    <div class="alert alert-info">TODO: Implement standard DNS domain wizard for creating bind9 zones automatically.</div>
+                                </div>
+                                <div class="tab-pane fade" id="dns-add-zone">
+                                    <h4 class="text-white mb-3">Add DNS-Zone</h4>
+                                    <div class="alert alert-info">TODO: Implement Add raw DNS Zone for complex bind9 inputs.</div>
+                                </div>
+                                <div class="tab-pane fade" id="dns-zone-import">
+                                    <h4 class="text-white mb-3">Zone-File Import</h4>
+                                    <div class="alert alert-info">TODO: Implement Bind9 structured zone import form interface.</div>
+                                </div>
+                                <div class="tab-pane fade" id="dns-secondary-zones">
+                                    <h4 class="text-white mb-3">Secondary DNS-Zones</h4>
+                                    <div class="alert alert-info">TODO: Implement Secondary Slave zones configuration.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- System Tab -->
+                    <div class="tab-pane fade" id="system">
+                        <div class="row">
+                            <!-- Left Sub-menu column -->
+                            <div class="col-md-3 border-end border-secondary">
+                                <ul class="nav flex-column nav-pills" id="system-submenu" role="tablist" aria-orientation="vertical">
+                                    <li class="nav-item"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">System</span></li>
+                                    <li class="nav-item"><a class="nav-link active" href="#server-config" data-bs-toggle="pill">Server Config</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#apt-manager" data-bs-toggle="pill">APT Packages</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#os-update" data-bs-toggle="pill">OS-Update</a></li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Right Main Content column -->
+                            <div class="col-md-9 tab-content">
+                                <!-- Server Config Panel -->
+                                <div class="tab-pane fade show active" id="server-config">
+                                    <h4 class="text-white mb-3">Server Config</h4>
+                                    
+                                    <!-- Inner Tabs matching ISPConfig style -->
+                                    <ul class="nav nav-tabs mb-3 border-secondary" id="serverConfigTabs" role="tablist">
+                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary active" id="sys-mail-tab" data-bs-toggle="tab" data-bs-target="#sys-mail" type="button" role="tab">Mail</button></li>
+                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-server-tab" data-bs-toggle="tab" data-bs-target="#sys-server" type="button" role="tab">Server</button></li>
+                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-web-tab" data-bs-toggle="tab" data-bs-target="#sys-web" type="button" role="tab">Web</button></li>
+                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-dns-tab" data-bs-toggle="tab" data-bs-target="#sys-dns" type="button" role="tab">DNS</button></li>
+                                    </ul>
+                                    
+                                    <div class="tab-content" id="serverConfigTabsContent">
+                                        <!-- Mail Config Block (from user screenshot) -->
+                                        <div class="tab-pane fade show active" id="sys-mail" role="tabpanel">
+                                            <div class="card bg-dark border-secondary p-3">
+                                                <div class="card-header bg-info text-dark border-bottom border-secondary px-3 py-2 fw-bold">
+                                                    Configuration for system
+                                                </div>
+                                                <div class="card-body px-0 pt-4">
+                                                    <form id="serverMailConfigForm">
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">Module:</label>
+                                                            <div class="col-sm-9">
+                                                                <select class="form-select bg-dark border-secondary text-white"><option>postfix_mysql</option><option>postfix_sqlite</option></select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">Maildir Path:</label>
+                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/vmail/[domain]/[localpart]"></div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">Maildir Format:</label>
+                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Maildir</option></select></div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">Homedir Path:</label>
+                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/vmail"></div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">DKIM Path:</label>
+                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/lib/amavis/dkim"></div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">POP3/IMAP Daemon:</label>
+                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Dovecot</option></select></div>
+                                                        </div>
+                                                        <div class="row mb-3 align-items-center">
+                                                            <label class="col-sm-3 col-form-label text-end text-light">Content Filter:</label>
+                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Amavisd</option><option>Rspamd</option></select></div>
+                                                        </div>
+                                                        <div class="row border-top border-secondary pt-3 mt-4">
+                                                            <div class="col-sm-9 offset-sm-3 text-end">
+                                                                <button type="button" class="btn btn-success me-2" onclick="saveServerConfig('mail')">Save</button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="sys-server" role="tabpanel"><div class="alert alert-info">TODO: Main Server config attributes.</div></div>
+                                        <div class="tab-pane fade" id="sys-web" role="tabpanel"><div class="alert alert-info">TODO: Global Web / PHP / Nginx configurations.</div></div>
+                                        <div class="tab-pane fade" id="sys-dns" role="tabpanel"><div class="alert alert-info">TODO: Global Bind9 recursion/logging setup.</div></div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="apt-manager">
+                                    <h4 class="text-white mb-3">APT Package Modules</h4>
+                                    <div class="card bg-dark border-secondary p-3">
+                                        <p class="text-secondary">Execute low-level system package operations (async worker queue).</p>
+                                        <div class="input-group mb-3">
+                                            <input type="text" id="aptPackageName" class="form-control bg-dark border-secondary text-white" placeholder="Package Name (e.g. htop, nano)">
+                                            <button class="btn btn-outline-success" type="button" onclick="execAPT('install')">Install</button>
+                                            <button class="btn btn-outline-danger" type="button" onclick="execAPT('remove')">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="os-update">
+                                    <h4 class="text-white mb-3">OS Update</h4>
+                                    <div class="card bg-dark border-secondary p-3">
+                                        <button class="btn btn-lg btn-warning text-dark fw-bold w-100" onclick="execAPT('upgrade')">Trigger System APT Upgrade</button>
+                                        <small class="text-secondary mt-2 text-center">This command will push `apt-get upgrade -y` to the background worker.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </main>
         </div>
@@ -246,8 +468,31 @@
             try {
                 const res = await fetch('/api/v1/admin/firewall');
                 const data = await res.json();
-                const sysRules = data.rules || [];
+                                const sysRules = data.rules || [];
                 const sqlRules = data.sqlRules || [];
+                const fwStatus = data.status || "active";
+                
+                const badge = document.getElementById('fwStatusBadge');
+                document.getElementById('fwInstallUfwBtn').classList.add('d-none');
+                document.getElementById('fwInstallNftBtn').classList.add('d-none');
+                document.getElementById('fwEnableBtn').classList.add('d-none');
+                document.getElementById('fwDisableBtn').classList.add('d-none');
+
+                if (fwStatus === "not_installed") {
+                    badge.className = "badge bg-dark ms-2";
+                    badge.innerText = "Not Installed";
+                    document.getElementById('fwInstallUfwBtn').classList.remove('d-none');
+                    document.getElementById('fwInstallNftBtn').classList.remove('d-none');
+                } else if (fwStatus === "inactive") {
+                    badge.className = "badge bg-warning text-dark ms-2";
+                    badge.innerText = "Inactive";
+                    document.getElementById('fwEnableBtn').classList.remove('d-none');
+                } else {
+                    badge.className = "badge bg-success ms-2";
+                    badge.innerText = "Active";
+                    document.getElementById('fwDisableBtn').classList.remove('d-none');
+                }
+
                 const allRules = [];
 
                 // Match SQL
@@ -301,9 +546,124 @@
             }
         }
 
+                async function installFirewall(backend) {
+            if(!confirm(`Install ${backend} on server?`)) return;
+            await fetch('/api/v1/admin/firewall/install', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backend })
+            });
+            alert('A backend installation job has executed. Please refresh shortly.');
+            location.reload();
+        }
+
+        async function toggleFirewall(action) {
+            await fetch('/api/v1/admin/firewall/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            location.reload();
+        }
+
         function logout() {
             document.cookie = "dashboard_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.href = '/login';
+        }
+
+                async function fetchServices() {
+            try {
+                const res = await fetch('/api/v1/admin/services');
+                const data = await res.json();
+                const container = document.getElementById('servicesStatus');
+                container.innerHTML = '';
+                
+                data.forEach(service => {
+                    const badgeClass = service.active ? 'bg-success' : 'bg-danger';
+                    const badge = `<span class="badge ${badgeClass} fs-6">${service.service.toUpperCase()} - ${service.status}</span>`;
+                    container.innerHTML += badge;
+                });
+            } catch(e) {
+                document.getElementById('servicesStatus').innerHTML = '<span class="badge bg-danger">Network Error</span>';
+            }
+        }
+
+
+        );
+                const data = await res.json();
+                if(data.status === "ok") {
+                    document.getElementById('updateMenu').innerHTML = '<span class="nav-link text-warning"><i class="bi bi-arrow-repeat spin"></i> Applying... Reloading in 30s.</span>';
+                    setTimeout(() => location.reload(), 30000);
+                } else {
+                    alert('Backend rejected upgrade signal.');
+                }
+            } catch(e) {
+                alert('Network error passing update payload signal.');
+            }
+        }
+        
+        
+        function showUpdateScreen() {
+            document.body.innerHTML = `
+            <div class="bg-dark text-white vh-100 d-flex flex-column justify-content-center align-items-center">
+                <h2><i class="bi bi-cloud-arrow-down spin text-warning"></i> Updating dashBoard2go...</h2>
+                <p class="text-secondary mt-2">Do not close this window. Services are currently down.</p>
+                <textarea id="updateLogBox" class="form-control bg-dark border-secondary text-success mt-3 font-monospace" style="width: 80%; max-width: 900px; height: 350px;" readonly></textarea>
+                <button id="updateReloadBtn" class="btn btn-success mt-4 d-none fw-bold px-5" onclick="location.reload()">Update Complete - Reload Dashboard</button>
+            </div>`;
+        }
+
+        async function monitorUpdate() {
+            const logBox = document.getElementById('updateLogBox');
+            let isComplete = false;
+
+            // The public raw log URL in the default debian directory where Nginx runs
+            const publicLogUrl = window.location.protocol + "//" + window.location.hostname + "/dashboard2go_update.log";
+            
+            const poll = setInterval(async () => {
+                // 1. Try fetching from public Nginx/Apache folder (graceful fail if dead)
+                try {
+                    const pubRes = await fetch(publicLogUrl, { cache: 'no-store' });
+                    if (pubRes.ok) {
+                        const text = await pubRes.text();
+                        if (text && text.length > 0) logBox.value = text;
+                        logBox.scrollTop = logBox.scrollHeight;
+                    }
+                } catch(e) { }
+
+                // 2. Poll native backend API to see if systemctl restarted the daemon
+                try {
+                    const backRes = await fetch('/api/v1/admin/updates/log', { cache: 'no-store' });
+                    if (backRes.ok) {
+                        const backData = await backRes.json();
+                        if (backData.log) {
+                            logBox.value = backData.log;
+                            logBox.scrollTop = logBox.scrollHeight;
+                        }
+                        if (backData.log.includes("Update completed successfully")) {
+                            clearInterval(poll);
+                            document.getElementById('updateReloadBtn').classList.remove('d-none');
+                            document.querySelector('h2').innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Update Finished';
+                        }
+                    }
+                } catch(e) { }
+            }, 1500);
+        }
+        
+        async function applyUpdate() {
+            if(!confirm("Are you sure you want to construct the firmware updates?\nServices will go offline and you will be transitioned to the Live Monitoring view.")) return;
+            try {
+                const res = await fetch('/api/v1/admin/updates/apply', { method: 'POST' });
+                const data = await res.json();
+                if(data.status === "ok") {
+                    showUpdateScreen();
+                    monitorUpdate();
+                } else {
+                    alert('Backend rejected upgrade signal.');
+                }
+            } catch(e) {
+                alert('Network error passing update payload signal.');
+            }
         }
 
         async function fetchUpdates() {
@@ -318,10 +678,12 @@
         }
 
         setInterval(fetchStats, 5000);
+        setInterval(fetchServices, 10000);
         setInterval(fetchUpdates, 30000); // Check updates every 30 seconds
         fetchStats();
         fetchUsers();
         fetchUpdates();
+        fetchServices();
         fetchFirewall();
     </script>
 </body>
