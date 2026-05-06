@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -33,7 +34,7 @@ func promptUser(reader *bufio.Reader, question, defaultVal string) string {
 
 // getPublicIP fetches the external IP
 func getPublicIP() string {
-	cmd := exec.Command("curl", "-s", "https://ifconfig.me")
+	cmd := exec.Command("curl", "-s", "-4", "https://ifconfig.me")
 	out, err := cmd.Output()
 	if err != nil {
 		return "127.0.0.1"
@@ -41,9 +42,19 @@ func getPublicIP() string {
 	return string(out)
 }
 
+// getPublicIPv6 fetches the external IPv6
+func getPublicIPv6() string {
+	cmd := exec.Command("curl", "-s", "-6", "https://ifconfig.me")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
 // setupLocalBindZone creates an authoritative zone for the FQDN
 // createMicroZone binds an explicit exact-match domain to this server IP natively.
-func createMicroZone(domain, ns1, ns2, ip string) {
+func createMicroZone(domain, ns1, ns2, ip, ipv6 string) {
 	if domain == "" {
 		return
 	}
@@ -69,6 +80,12 @@ func createMicroZone(domain, ns1, ns2, ip string) {
 	// 1. Create the base zone & entry
 	_ = b9.CreateZone(cfg)
 
+	// Add AAAA records
+	if ipv6 != "" {
+		b9.AddRecord(domain, dns.DNSRecord{Type: "AAAA", Name: "@", Value: ipv6, TTL: 86400})
+		b9.AddRecord(domain, dns.DNSRecord{Type: "AAAA", Name: "www", Value: ipv6, TTL: 86400})
+	}
+
 	// 2. Add extra NS records explicitly via our wrapper
 	if ns2 != "" && ns1 != ns2 {
 		b9.AddRecord(domain, dns.DNSRecord{
@@ -82,18 +99,18 @@ func createMicroZone(domain, ns1, ns2, ip string) {
 
 // setupLocalBindZone creates primarily ONE authoritative zone for the Base Domain
 // and populates it with A records for the FQDN and Nameservers to prevent CAA lookup loops and BIND zone conflicts.
-func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
+func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2, ipv6_1, ipv6_2 string) {
 	fmt.Println("Configuring single authoritative local Bind9 Zone for Base Domain...")
 
 	// Strictly limit zones to base domains. Do NOT create microzones for ns1/ns2/subdomains natively.
-	createMicroZone(baseDomain, ns1, ns2, ip1)
+	createMicroZone(baseDomain, ns1, ns2, ip1, ipv6_1)
 
 	b9 := dns.NewBind9Wrapper()
 
-	// Helper to safely strip suffix and add an A record
-	addSubdomainRecord := func(fullDomain, ip string) {
+	// Helper to safely strip suffix and add an A or AAAA record
+	addSubdomainRecord := func(fullDomain, ip, recType string) {
 		fullDomain = strings.TrimSpace(fullDomain)
-		if fullDomain == baseDomain || fullDomain == "" {
+		if fullDomain == baseDomain || fullDomain == "" || ip == "" {
 			return
 		}
 
@@ -102,7 +119,7 @@ func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
 			sub := strings.TrimSuffix(fullDomain, importStr)
 			if sub != "" {
 				b9.AddRecord(baseDomain, dns.DNSRecord{
-					Type:  "A",
+					Type:  recType,
 					Name:  sub,
 					Value: ip,
 					TTL:   86400,
@@ -111,13 +128,33 @@ func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
 		}
 	}
 
-	addSubdomainRecord(fqdn, ip1)
-	addSubdomainRecord(ns1, ip1)
+	addSubdomainRecord(fqdn, ip1, "A")
+	addSubdomainRecord(ns1, ip1, "A")
+	if ipv6_1 != "" {
+		addSubdomainRecord(fqdn, ipv6_1, "AAAA")
+		addSubdomainRecord(ns1, ipv6_1, "AAAA")
+	}
 
 	if ip2 != "" {
-		addSubdomainRecord(ns2, ip2)
+		addSubdomainRecord(ns2, ip2, "A")
 	} else {
-		addSubdomainRecord(ns2, ip1)
+		addSubdomainRecord(ns2, ip1, "A")
+	}
+
+	if ipv6_2 != "" {
+		addSubdomainRecord(ns2, ipv6_2, "AAAA")
+	} else if ipv6_1 != "" {
+		addSubdomainRecord(ns2, ipv6_1, "AAAA")
+	}
+
+	// Inject the secondary nameserver as an NS record for the zone to prevent Let's Encrypt "Lame Delegation" DNS timeouts
+	if ns2 != "" && ns1 != ns2 {
+		b9.AddRecord(baseDomain, dns.DNSRecord{
+			Type:  "NS",
+			Name:  "@",
+			Value: ns2 + ".",
+			TTL:   86400,
+		})
 	}
 
 	// Ensure BIND listens publicly and allows external queries so Let's Encrypt can resolve us
@@ -134,6 +171,10 @@ func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
 	exec.Command("systemctl", "restart", "bind9").Run()
 	exec.Command("systemctl", "restart", "named").Run() // Redhat/Alma fallback name
 	fmt.Println("Bind9 explicit micro-zones loaded successfully.")
+
+	// Force a 5-second sleep so BIND9 has time to announce UDP 53 routes and load physical zone files
+	// before the certbot daemon triggers Let's Encrypt validation.
+	time.Sleep(5 * time.Second)
 }
 
 func getCertForFQDN(fqdn string) error {
@@ -214,7 +255,20 @@ func main() {
 	if serverIP2 == "" {
 		serverIP2 = serverIP1
 	}
+
 	enableIPv6 := promptUser(reader, "Enable IPv6 Support?", "y")
+	useIPv6 := strings.ToLower(enableIPv6) == "y"
+	serverIPv6_1 := ""
+	serverIPv6_2 := ""
+	if useIPv6 {
+		detectedIPv6 := getPublicIPv6()
+		serverIPv6_1 = promptUser(reader, "Enter Primary Server IPv6 (for FQDN & NS1)", detectedIPv6)
+		serverIPv6_2 = promptUser(reader, "Enter Secondary Server IPv6 (for NS2, leave blank if same as IPv6_1)", serverIPv6_1)
+		if serverIPv6_2 == "" {
+			serverIPv6_2 = serverIPv6_1
+		}
+	}
+
 	webServer := promptUser(reader, "Select Web Server (apache/nginx)", "nginx")
 	dbServer := promptUser(reader, "Select Postgres Database additionally? (mariadb is mandatory)", "n")
 	hasPostgres := strings.ToLower(dbServer) == "y"
@@ -313,7 +367,7 @@ func main() {
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
 
 	// Create authoritative zone before probing Let's encrypt
-	setupLocalBindZone(hostname, baseDomain, ns1, ns2, serverIP1, serverIP2)
+	setupLocalBindZone(hostname, baseDomain, ns1, ns2, serverIP1, serverIP2, serverIPv6_1, serverIPv6_2)
 
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
