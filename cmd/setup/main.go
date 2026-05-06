@@ -80,17 +80,44 @@ func createMicroZone(domain, ns1, ns2, ip string) {
 	}
 }
 
-// setupLocalBindZone creates authoritative zones for the Base Domain, FQDN, and Nameservers exclusively.
+// setupLocalBindZone creates primarily ONE authoritative zone for the Base Domain
+// and populates it with A records for the FQDN and Nameservers to prevent CAA lookup loops and BIND zone conflicts.
 func setupLocalBindZone(fqdn, baseDomain, ns1, ns2, ip1, ip2 string) {
-	fmt.Println("Configuring explicit local Bind9 Zones for Domains & Nameservers")
+	fmt.Println("Configuring single authoritative local Bind9 Zone for Base Domain...")
 
+	// Strictly limit zones to base domains. Do NOT create microzones for ns1/ns2/subdomains natively.
 	createMicroZone(baseDomain, ns1, ns2, ip1)
-	if baseDomain != fqdn {
-		createMicroZone(fqdn, ns1, ns2, ip1)
+
+	b9 := dns.NewBind9Wrapper()
+
+	// Helper to safely strip suffix and add an A record
+	addSubdomainRecord := func(fullDomain, ip string) {
+		fullDomain = strings.TrimSpace(fullDomain)
+		if fullDomain == baseDomain || fullDomain == "" {
+			return
+		}
+
+		importStr := "." + baseDomain
+		if strings.HasSuffix(fullDomain, importStr) {
+			sub := strings.TrimSuffix(fullDomain, importStr)
+			if sub != "" {
+				b9.AddRecord(baseDomain, dns.DNSRecord{
+					Type:  "A",
+					Name:  sub,
+					Value: ip,
+					TTL:   86400,
+				})
+			}
+		}
 	}
-	createMicroZone(ns1, ns1, ns2, ip1)
-	if ns1 != ns2 {
-		createMicroZone(ns2, ns1, ns2, ip2)
+
+	addSubdomainRecord(fqdn, ip1)
+	addSubdomainRecord(ns1, ip1)
+
+	if ip2 != "" {
+		addSubdomainRecord(ns2, ip2)
+	} else {
+		addSubdomainRecord(ns2, ip1)
 	}
 
 	// Ensure BIND listens publicly and allows external queries so Let's Encrypt can resolve us
