@@ -151,7 +151,7 @@
             document.body.innerHTML = `
             <div class="bg-dark text-white vh-100 d-flex flex-column justify-content-center align-items-center">
                 <h2><i class="bi bi-cloud-arrow-down spin text-warning"></i> Updating dashBoard2go...</h2>
-                <p class="text-secondary mt-2">Do not close this window. Services are currently down.</p>
+                <p id="updateStatusText" class="text-secondary mt-2">Do not close this window. Services are currently down.</p>
                 <textarea id="updateLogBox" class="form-control bg-dark border-secondary text-success mt-3 font-monospace" style="width: 80%; max-width: 900px; height: 350px;" readonly></textarea>
                 <button id="updateReloadBtn" class="btn btn-success mt-4 d-none fw-bold px-5" onclick="location.reload()">Update Complete - Reload Dashboard</button>
             </div>`;
@@ -188,6 +188,8 @@
                             clearInterval(poll);
                             document.getElementById('updateReloadBtn').classList.remove('d-none');
                             document.querySelector('h2').innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Update Finished';
+                            const statusText = document.getElementById('updateStatusText');
+                            if (statusText) statusText.innerText = 'Updated sucessfully! You can close this window or go back to admin dashboard';
                         }
                     }
                 } catch(e) { }
