@@ -39,9 +39,12 @@ rm -f /usr/local/bin/dashboard2go-*
 
 log "3. Extracting and staging payload..."
 log "Fetching %s from Github..."
-sleep 1
+wget -q "https://github.com/sickplanet/dashBoard2go/releases/download/%s/dashboard2go-linux-amd64.tar.gz" -O /tmp/dashboard2go.tar.gz || log "Warning: Wget failed"
+tar -xzf /tmp/dashboard2go.tar.gz -C /tmp/ || log "Warning: Tar extract failed"
 
 log "4. Swapping target executables and web dir..."
+cp -R /tmp/dashboard2go/* /usr/local/bin/ || true
+cp -R /tmp/dashboard2go/web /var/www/dashboard2go/ || true
 
 log "5. Binding permissions..."
 chmod +x /usr/local/bin/dashboard2go-* || true
@@ -54,7 +57,7 @@ systemctl start dashboard2go-updater
 
 log "Update completed successfully. Target payload active."
 rm -f /tmp/dashboard2go-apply-update.sh
-`, targetVersion, targetVersion)
+`, targetVersion, targetVersion, targetVersion)
 
 	err := ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
