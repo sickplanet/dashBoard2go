@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"dashBoard2go/internal/config"
@@ -142,15 +143,10 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 			})
 
 			admin.POST("/updates/check", func(c *gin.Context) {
-				conf, err := config.LoadConfig("config.json")
-				if err != nil {
-					c.JSON(500, gin.H{"error": "Config schema not found"})
-					return
-				}
 
 				versionBytes, _ := os.ReadFile("VERSION")
-                                currentVer := strings.TrimSpace(string(versionBytes))
-                                err = updater.CheckForUpdates(db, currentVer)
+				currentVer := strings.TrimSpace(string(versionBytes))
+				err := updater.CheckForUpdates(db, currentVer)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
