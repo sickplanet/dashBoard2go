@@ -12,7 +12,6 @@ import (
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/queue"
 	"dashBoard2go/internal/updater"
-	"os"
 	"strings"
 	"time"
 
@@ -62,7 +61,7 @@ func main() {
 	// Initialize the HTTP Router before setting up routes
 	r := gin.Default()
 
-	api.SetupRoutes(r, db, q)
+	api.SetupRoutes(r, db, q, conf)
 
 	r.Static("/admin", "./web/admin")
 	r.Static("/user", "./web/user")

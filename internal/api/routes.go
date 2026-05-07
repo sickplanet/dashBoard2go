@@ -21,7 +21,7 @@ import (
 )
 
 // SetupRoutes registers the HTTP routes for the web interface and API
-func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
+func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue, conf *config.PanelConfig) {
 	// Root redirect depending on state/login
 	r.GET("/", func(c *gin.Context) {
 		sessionToken, err := c.Cookie("dashboard_session")
