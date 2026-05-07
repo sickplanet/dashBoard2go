@@ -237,3 +237,7 @@ dashBoard2go is a free, open-source web server control panel (cPanel alternative
 - [x] Switched `ApplyUpdate` to natively perform a `client.Get` on the GitHub API fetching the structured `.json` payload dynamically injecting `browser_download_url`.
 - [x] Updated Detached Bash Payload in `ApplyUpdate` logic dynamically executing `unzip -q` if the `.assets[0].name` payload structure reveals a `.zip` artifact instead of `.tar.gz`.
 - [x] Injected an asynchronous hourly goroutine inside `cmd/core/main.go` firing `updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)` ensuring the Sidebar UI `data.update_available` stays strictly synchronous dynamically rather than displaying outdated smaller versions.
+
+## Test Resolution: Fix compiler definitions for updating sequence
+- [x] Removed compiler errors (`undefined: conf`) generated during CI test phases inside `internal/api/routes.go` across the `updater.CheckForUpdates` logic. Updated definition mapping struct pointers safely bypassing closures scope locks.
+- [x] Passed all definitions cleanly across `go test -v ./...`.

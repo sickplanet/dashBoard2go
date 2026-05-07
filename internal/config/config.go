@@ -24,7 +24,7 @@ type PanelConfig struct {
 	MariaDBRootPass    string   `json:"mariadb_root_pass"`
 	PostgresRootPass   string   `json:"postgres_root_pass,omitempty"`
 	SQLitePath         string   `json:"sqlite_path"`
-	UpdaterEndpoint    string   `json:"updater_endpoint"` // e.g. "https://api.github.com/repos/yourname/dashBoard2go/releases/latest"
+	UpdaterEndpoint    string   `json:"updater_endpoint"` // e.g. "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest"
 }
 
 // LoadConfig reads the config.json located next to the executable
