@@ -17,6 +17,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"dashBoard2go/internal/config"
+	"dashBoard2go/internal/db/migrations"
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/wrappers/dns"
 	"dashBoard2go/internal/wrappers/ssl"
