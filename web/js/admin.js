@@ -152,7 +152,7 @@
             <div class="bg-dark text-white vh-100 d-flex flex-column justify-content-center align-items-center">
                 <h2><i class="bi bi-cloud-arrow-down spin text-warning"></i> Updating dashBoard2go...</h2>
                 <p id="updateStatusText" class="text-secondary mt-2">Do not close this window. Services are currently down.</p>
-                <textarea id="updateLogBox" class="form-control bg-dark border-secondary text-success mt-3 font-monospace" style="width: 80%; max-width: 900px; height: 350px;" readonly></textarea>
+                <textarea id="updateLogBox" class="form-control bg-dark border-secondary text-success mt-3 font-monospace" readonly></textarea>
                 <button id="updateReloadBtn" class="btn btn-success mt-4 d-none fw-bold px-5" onclick="location.reload()">Update Complete - Reload Dashboard</button>
             </div>`;
         }

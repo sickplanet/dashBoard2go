@@ -69,6 +69,7 @@ func main() {
 	r.Static("/user", "./web/user")
 	r.Static("/shared", "./web/shared")
 	r.Static("/js", "./web/js")
+	r.Static("/css", "./web/css")
 
 	httpAddr := fmt.Sprintf(":%d", conf.PanelPortHTTP)
 	httpsAddr := fmt.Sprintf(":%d", conf.PanelPortHTTPS)
