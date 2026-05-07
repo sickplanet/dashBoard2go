@@ -131,8 +131,10 @@
 
                 async function fetchServices() {
             try {
+                if (!document.getElementById('servicesStatus')) return;
                 const data = await apiFetch('/api/v1/admin/services');
                 const container = document.getElementById('servicesStatus');
+                if (!container) return;
                 container.innerHTML = '';
                 
                 data.forEach(service => {
@@ -141,7 +143,7 @@
                     container.innerHTML += badge;
                 });
             } catch(e) {
-                document.getElementById('servicesStatus').innerHTML = '<span class="badge bg-danger">Network Error</span>';
+                const cErr = document.getElementById('servicesStatus'); if(cErr) { cErr.innerHTML = '<span class="badge bg-danger">Network Error</span>'; }
             }
         }
         

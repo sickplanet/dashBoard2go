@@ -72,7 +72,7 @@ rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go.tar.gz
 	}
 
 	log.Printf("[Updater] Launching detached update script: %s\n", scriptPath)
-	cmd := exec.Command("nohup", scriptPath)
+	cmd := exec.Command("systemd-run", "--unit=dashboard2go-update-task", "/bin/bash", scriptPath)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed starting decoupled update script: %w", err)
 	}
