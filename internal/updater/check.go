@@ -15,9 +15,13 @@ type GitHubRelease struct {
 }
 
 // Generate an Update check. TODO: Schedule this via Watchdog or Core cron logic.
-func CheckForUpdates(db *sql.DB, currentVersion string) error {
+func CheckForUpdates(db *sql.DB, currentVersion string, endpoint string) error {
+	if endpoint == "" {
+		endpoint = "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest"
+	}
+
 	client := http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get("https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest")
+	resp, err := client.Get(endpoint)
 	if err != nil {
 		return err
 	}

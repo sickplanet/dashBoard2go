@@ -146,7 +146,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 
 				versionBytes, _ := os.ReadFile("VERSION")
 				currentVer := strings.TrimSpace(string(versionBytes))
-				err := updater.CheckForUpdates(db, currentVer)
+				err := updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
@@ -156,7 +156,11 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
 				if update != "" && update != "false" {
 					client := http.Client{Timeout: 5 * time.Second}
-					resp, reqErr := client.Get("https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest")
+					endpoint := conf.UpdaterEndpoint
+					if endpoint == "" {
+						endpoint = "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest"
+					}
+					resp, reqErr := client.Get(endpoint)
 					if reqErr == nil {
 						defer resp.Body.Close()
 						var release map[string]interface{}
@@ -180,7 +184,7 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				}
 
 				// Safely detached payload delivery
-				err := updater.ApplyUpdate(targetVersion)
+				err := updater.ApplyUpdate(targetVersion, conf.UpdaterEndpoint)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return

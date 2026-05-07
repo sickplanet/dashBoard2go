@@ -11,6 +11,10 @@ import (
 	"dashBoard2go/internal/api"
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/queue"
+	"dashBoard2go/internal/updater"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
@@ -32,6 +36,16 @@ func main() {
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		log.Fatalf("FAILED to open SQLite database: %v", err)
+
+		go func() {
+			for {
+				versionBytes, _ := os.ReadFile("VERSION")
+				currentVer := strings.TrimSpace(string(versionBytes))
+				updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)
+				time.Sleep(1 * time.Hour)
+			}
+		}()
+
 	}
 	defer db.Close()
 
