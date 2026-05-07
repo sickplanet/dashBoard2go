@@ -226,3 +226,8 @@ dashBoard2go is a free, open-source web server control panel (cPanel alternative
 - [x] Changed `internal/updater/apply.go` detached bash script to launch via `systemd-run --unit=dashboard2go-update-task` instead of `nohup`. This guarantees `systemctl stop dashboard2go-core` won't recursively terminate the updater payload execution by grouping it under the same systemd cgroup context.
 - [x] Altered `/updates/check` API logic to securely evaluate local sequence flags using `os.ReadFile("VERSION")` dynamically rather than relying on outdated `config.json` caches.
 - [x] Patched `web/js/admin.js` to include DOM safety checks for `fetchServices()` resolving fatal network polling errors generated when updating dynamically rewrites the main UI thread.
+
+## Final Wget & Updates Path Polish
+- [x] Modified `internal/updater/apply.go` to explicitly wipe log payloads (`> $LOG_TMP` and `> $LOG_PUBLIC`) immediately cleanly initializing outputs instead of concatenating infinite logs across updates.
+- [x] Added strict `v%s` tag string injection in `apply.go`'s `wget` extraction correcting GitHub's download URL payload requirements and returning HTTP 200 via `Wget`. 
+- [x] Guarded `fetchUpdates` logic inside `web/js/admin.js` specifically catching inner DOM elements ensuring frontend Javascript threads don't crash loops. 

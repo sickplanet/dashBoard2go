@@ -22,8 +22,8 @@ set -e
 
 LOG_PUBLIC="/var/www/html/dashboard2go_update.log"
 LOG_TMP="/tmp/dashboard2go-update.log"
-touch $LOG_TMP || true
-touch $LOG_PUBLIC || true
+> $LOG_TMP || true
+> $LOG_PUBLIC || true
 chmod 644 $LOG_PUBLIC || true
 
 log() {
@@ -45,7 +45,7 @@ rm -f %s/dashboard2go-*
 
 log "3. Extracting and staging payload..."
 log "Fetching %s from Github..."
-wget -q "https://github.com/sickplanet/dashBoard2go/releases/download/%s/dashboard2go-linux-amd64.tar.gz" -O /tmp/dashboard2go.tar.gz || log "Warning: Wget failed"
+wget -q "https://github.com/sickplanet/dashBoard2go/releases/download/v%s/dashboard2go-linux-amd64.tar.gz" -O /tmp/dashboard2go.tar.gz || log "Warning: Wget failed"
 mkdir -p /tmp/dashboard2go_extract
 tar -xzf /tmp/dashboard2go.tar.gz -C /tmp/dashboard2go_extract/ || log "Warning: Tar extract failed"
 

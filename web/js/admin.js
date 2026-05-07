@@ -234,6 +234,7 @@
         }
 
         async function fetchUpdates() {
+            if (!document.getElementById('updateMenu')) return;
             try {
                 const data = await apiFetch('/api/v1/admin/updates');
                 if (data.update_available && data.update_available !== "" && data.update_available !== "false") {
