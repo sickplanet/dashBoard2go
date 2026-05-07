@@ -66,7 +66,7 @@ log "Update completed successfully. Target payload active."
 rm -f /tmp/dashboard2go-apply-update.sh
 rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go.tar.gz
 `, targetVersion, cwd, targetVersion, targetVersion, cwd, cwd, cwd)
-err = ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	err = ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return fmt.Errorf("failed writing decoupled update script: %w", err)
 	}
