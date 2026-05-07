@@ -66,7 +66,7 @@ func resolveIP(host string) (ipv4, ipv6 string) {
 
 // getPublicIP fetches the external IP
 func getPublicIP() string {
-	cmd := exec.Command("curl", "-s", "-4", "https://ifconfig.me")
+	cmd := exec.Command("curl", "-s", "-4", "https://api.ipify.org")
 	out, err := cmd.Output()
 	if err != nil {
 		return "127.0.0.1"
@@ -76,7 +76,7 @@ func getPublicIP() string {
 
 // getPublicIPv6 fetches the external IPv6
 func getPublicIPv6() string {
-	cmd := exec.Command("curl", "-s", "-6", "https://ifconfig.me")
+	cmd := exec.Command("curl", "-s", "-6", "https://api64.ipify.org")
 	out, err := cmd.Output()
 	if err != nil {
 		return ""
@@ -584,6 +584,20 @@ func main() {
 	err = config.SaveConfig("config.json", panelConfig)
 	if err != nil {
 		log.Fatalf("CRITICAL: Could not save config.json: %v\n", err)
+	}
+
+	fmt.Println("Enabling and starting user-selected services...")
+	servicesToStart := []string{"bind9", "postfix", "dovecot"}
+	servicesToStart = append(servicesToStart, webServer)
+	servicesToStart = append(servicesToStart, "mariadb")
+	if hasPostgres {
+		servicesToStart = append(servicesToStart, "postgresql")
+	}
+	if ftpChoice == "pure-ftpd" {
+		servicesToStart = append(servicesToStart, "pure-ftpd")
+	}
+	for _, svc := range servicesToStart {
+		exec.Command("systemctl", "enable", "--now", svc).Run()
 	}
 
 	installSystemdServices()

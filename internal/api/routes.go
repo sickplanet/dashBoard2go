@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"dashBoard2go/internal/config"
@@ -188,6 +189,15 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				}
 
 				c.JSON(200, gin.H{"status": "ok", "message": "Update script detached and executing."})
+			})
+
+			admin.GET("/updates/log", func(c *gin.Context) {
+				content, err := os.ReadFile("/tmp/dashboard2go-update.log")
+				if err != nil {
+					c.JSON(200, gin.H{"log": "Waiting for update script to initialize log..."})
+					return
+				}
+				c.JSON(200, gin.H{"log": string(content)})
 			})
 
 			admin.GET("/firewall", func(c *gin.Context) {
