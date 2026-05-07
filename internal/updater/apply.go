@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 )
 
 // ApplyUpdate writes a decoupled script and runs it in the background
 func ApplyUpdate(targetVersion string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("could not get cwd: %v", err)
+	}
+
 	scriptPath := "/tmp/dashboard2go-apply-update.sh"
 
 	scriptContent := fmt.Sprintf(`#!/bin/bash
@@ -35,31 +41,32 @@ systemctl stop dashboard2go-updater || true
 sleep 2
 
 log "2. Removing old locked binaries..."
-rm -f /usr/local/bin/dashboard2go-*
+rm -f %s/dashboard2go-*
 
 log "3. Extracting and staging payload..."
 log "Fetching %s from Github..."
 wget -q "https://github.com/sickplanet/dashBoard2go/releases/download/%s/dashboard2go-linux-amd64.tar.gz" -O /tmp/dashboard2go.tar.gz || log "Warning: Wget failed"
-tar -xzf /tmp/dashboard2go.tar.gz -C /tmp/ || log "Warning: Tar extract failed"
+mkdir -p /tmp/dashboard2go_extract
+tar -xzf /tmp/dashboard2go.tar.gz -C /tmp/dashboard2go_extract/ || log "Warning: Tar extract failed"
 
 log "4. Swapping target executables and web dir..."
-cp -R /tmp/dashboard2go/* /usr/local/bin/ || true
-cp -R /tmp/dashboard2go/web /var/www/dashboard2go/ || true
+cp -R /tmp/dashboard2go_extract/dashboard2go-* %s/ || true
+cp -R /tmp/dashboard2go_extract/web %s/ || true
 
 log "5. Binding permissions..."
-chmod +x /usr/local/bin/dashboard2go-* || true
+chmod +x %s/dashboard2go-* || true
 
 log "6. Restarting ecosystem daemons..."
 systemctl start dashboard2go-core
 systemctl start dashboard2go-worker
 systemctl start dashboard2go-watchdog
-systemctl start dashboard2go-updater
+systemctl start dashboard2go-updater || true
 
 log "Update completed successfully. Target payload active."
 rm -f /tmp/dashboard2go-apply-update.sh
-`, targetVersion, targetVersion, targetVersion)
-
-	err := ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
+rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go.tar.gz
+`, targetVersion, cwd, targetVersion, targetVersion, cwd, cwd, cwd)
+err = ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return fmt.Errorf("failed writing decoupled update script: %w", err)
 	}
