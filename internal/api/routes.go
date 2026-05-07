@@ -148,7 +148,9 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 					return
 				}
 
-				err = updater.CheckForUpdates(db, conf.PanelVersion)
+				versionBytes, _ := os.ReadFile("VERSION")
+                                currentVer := strings.TrimSpace(string(versionBytes))
+                                err = updater.CheckForUpdates(db, currentVer)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
