@@ -8,21 +8,23 @@ import (
 
 // PanelConfig represents the hardcoded settings preventing disruptive state changes
 type PanelConfig struct {
-	Installed          bool   `json:"installed"`
-	PanelVersion       string `json:"panel_version"`
-	FQDN               string `json:"fqdn"`
-	NS1                string `json:"ns1"` // Primary Nameserver
-	NS2                string `json:"ns2"` // Secondary Nameserver
-	UseLetsEncryptFQDN bool   `json:"use_letsencrypt_fqdn"`
-	PanelPortHTTP      int    `json:"panel_port_http"`  // Typically 8080
-	PanelPortHTTPS     int    `json:"panel_port_https"` // Typically 8443
+	Installed          bool     `json:"installed"`
+	PanelVersion       string   `json:"panel_version"`
+	FQDN               string   `json:"fqdn"`
+	NS1                string   `json:"ns1"` // Primary Nameserver
+	NS2                string   `json:"ns2"` // Secondary Nameserver
+	UseLetsEncryptFQDN bool     `json:"use_letsencrypt_fqdn"`
+	PanelPortHTTP      int      `json:"panel_port_http"`  // Typically 8080
+	PanelPortHTTPS     int      `json:"panel_port_https"` // Typically 8443
 	WebEngine          string   `json:"web_engine"`       // e.g., "nginx" or "apache2"
 	Databases          []string `json:"databases"`        // e.g. ["mariadb", "postgres"]
 	DNSServer          string   `json:"dns_server"`       // e.g. "bind9"
+	Firewall           string   `json:"firewall"`         // e.g. "ufw", "nftables", "none"
+	FTPServer          string   `json:"ftp_server"`       // e.g. "pure-ftpd", "none"
 	MariaDBRootPass    string   `json:"mariadb_root_pass"`
-	PostgresRootPass   string `json:"postgres_root_pass,omitempty"`
-	SQLitePath         string `json:"sqlite_path"`
-	UpdaterEndpoint    string `json:"updater_endpoint"` // e.g. "https://api.github.com/repos/yourname/dashBoard2go/releases/latest"
+	PostgresRootPass   string   `json:"postgres_root_pass,omitempty"`
+	SQLitePath         string   `json:"sqlite_path"`
+	UpdaterEndpoint    string   `json:"updater_endpoint"` // e.g. "https://api.github.com/repos/yourname/dashBoard2go/releases/latest"
 }
 
 // LoadConfig reads the config.json located next to the executable
