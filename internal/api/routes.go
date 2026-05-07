@@ -113,7 +113,16 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, gin.H{"status": "Admin API OK"})
 			})
 			admin.GET("/services", func(c *gin.Context) {
-				services := []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
+				conf, err := config.LoadConfig("config.json")
+				var services []string
+				if err == nil {
+					services = []string{conf.WebEngine, conf.DNSServer, "postfix", "dovecot"}
+					services = append(services, conf.Databases...)
+				} else {
+					// Fallback just in case
+					services = []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
+				}
+
 				var statuses []map[string]interface{}
 				for _, s := range services {
 					statuses = append(statuses, oswrap.GetServiceStatus(s))

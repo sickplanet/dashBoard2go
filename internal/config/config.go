@@ -16,9 +16,10 @@ type PanelConfig struct {
 	UseLetsEncryptFQDN bool   `json:"use_letsencrypt_fqdn"`
 	PanelPortHTTP      int    `json:"panel_port_http"`  // Typically 8080
 	PanelPortHTTPS     int    `json:"panel_port_https"` // Typically 8443
-	WebEngine          string `json:"web_engine"`       // e.g., "nginx" or "apache"
-	HasPostgres        bool   `json:"has_postgres"`     // MariaDB is implicitly always true
-	MariaDBRootPass    string `json:"mariadb_root_pass"`
+	WebEngine          string   `json:"web_engine"`       // e.g., "nginx" or "apache2"
+	Databases          []string `json:"databases"`        // e.g. ["mariadb", "postgres"]
+	DNSServer          string   `json:"dns_server"`       // e.g. "bind9"
+	MariaDBRootPass    string   `json:"mariadb_root_pass"`
 	PostgresRootPass   string `json:"postgres_root_pass,omitempty"`
 	SQLitePath         string `json:"sqlite_path"`
 	UpdaterEndpoint    string `json:"updater_endpoint"` // e.g. "https://api.github.com/repos/yourname/dashBoard2go/releases/latest"
