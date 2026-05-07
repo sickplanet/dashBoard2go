@@ -32,6 +32,38 @@ func promptUser(reader *bufio.Reader, question, defaultVal string) string {
 	return input
 }
 
+func promptList(reader *bufio.Reader, title string, options []string) int {
+	fmt.Printf("\n%s\n", title)
+	for i, opt := range options {
+		fmt.Printf("  %d) %s\n", i+1, opt)
+	}
+	for {
+		fmt.Printf("Select option [1-%d]: ", len(options))
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+		var val int
+		if _, err := fmt.Sscanf(input, "%d", &val); err == nil && val >= 1 && val <= len(options) {
+			return val
+		}
+		fmt.Println("Invalid input, try again.")
+	}
+}
+
+func resolveIP(host string) (ipv4, ipv6 string) {
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return "", ""
+	}
+	for _, ip := range ips {
+		if ipv4 == "" && ip.To4() != nil {
+			ipv4 = ip.String()
+		} else if ipv6 == "" && ip.To4() == nil {
+			ipv6 = ip.String()
+		}
+	}
+	return
+}
+
 // getPublicIP fetches the external IP
 func getPublicIP() string {
 	cmd := exec.Command("curl", "-s", "-4", "https://ifconfig.me")
@@ -245,33 +277,108 @@ func main() {
 	fmt.Println("   dashBoard2go Interactive Setup (ISPConfig style) ")
 	fmt.Println("==================================================")
 
-	hostname := promptUser(reader, "Enter FQDN Hostname", "server1.example.com")
-	baseDomain := promptUser(reader, "Enter Base Domain Name (e.g. domain.ro / example.com)", "example.com")
-	ns1 := promptUser(reader, "Enter Primary Nameserver", "ns1.example.com")
-	ns2 := promptUser(reader, "Enter Secondary Nameserver", "ns2.example.com")
-	detectedIP := getPublicIP()
-	serverIP1 := promptUser(reader, "Enter Primary Server IP (for FQDN & NS1)", detectedIP)
-	serverIP2 := promptUser(reader, "Enter Secondary Server IP (for NS2, leave blank if same as IP1)", serverIP1)
-	if serverIP2 == "" {
-		serverIP2 = serverIP1
-	}
-
-	enableIPv6 := promptUser(reader, "Enable IPv6 Support?", "y")
+	fmt.Println("Applying initial Google DNS to /etc/resolv.conf...")
+	enableIPv6 := promptUser(reader, "Enable IPv6 Support? (Will also apply IPv6 Google DNS)", "y")
 	useIPv6 := strings.ToLower(enableIPv6) == "y"
-	serverIPv6_1 := ""
-	serverIPv6_2 := ""
+
+	resolvConf := "nameserver 8.8.8.8\nnameserver 8.8.4.4\n"
 	if useIPv6 {
-		detectedIPv6 := getPublicIPv6()
-		serverIPv6_1 = promptUser(reader, "Enter Primary Server IPv6 (for FQDN & NS1)", detectedIPv6)
-		serverIPv6_2 = promptUser(reader, "Enter Secondary Server IPv6 (for NS2, leave blank if same as IPv6_1)", serverIPv6_1)
+		resolvConf += "nameserver 2001:4860:4860::8888\nnameserver 2001:4860:4860::8844\n"
+	}
+	os.WriteFile("/etc/resolv.conf", []byte(resolvConf), 0644)
+	fmt.Println("Initial DNS applied successfully.")
+
+	hostname := promptUser(reader, "Enter FQDN Hostname", "server1.example.com")
+	autoLogic := promptUser(reader, "Use default auto logic for networking? (Extract domain from FQDN, use TLD info)", "y")
+
+	var baseDomain, ns1, ns2, serverIP1, serverIP2, serverIPv6_1, serverIPv6_2 string
+
+	if strings.ToLower(autoLogic) == "y" {
+		parts := strings.Split(hostname, ".")
+		if len(parts) >= 2 {
+			baseDomain = strings.Join(parts[len(parts)-2:], ".")
+		} else {
+			baseDomain = hostname
+		}
+		ns1 = "ns1." + baseDomain
+		ns2 = "ns2." + baseDomain
+
+		fmt.Printf("Auto-extracted Base Domain: %s\n", baseDomain)
+		fmt.Printf("Auto-generated NS1: %s\n", ns1)
+		fmt.Printf("Auto-generated NS2: %s\n", ns2)
+
+		v4_1, v6_1 := resolveIP(ns1)
+		v4_2, v6_2 := resolveIP(ns2)
+
+		serverIP1 = v4_1
+		serverIP2 = v4_2
+		if serverIP1 == "" {
+			serverIP1 = getPublicIP()
+		}
+		if serverIP2 == "" {
+			serverIP2 = serverIP1
+		}
+
+		serverIPv6_1 = v6_1
+		serverIPv6_2 = v6_2
+		if serverIPv6_1 != "" {
+			useIPv6 = true
+			enableIPv6 = "y"
+		}
 		if serverIPv6_2 == "" {
 			serverIPv6_2 = serverIPv6_1
 		}
+		fmt.Printf("Resolved IP1: %s, IP2: %s\n", serverIP1, serverIP2)
+		if useIPv6 {
+			fmt.Printf("Resolved IPv6_1: %s, IPv6_2: %s\n", serverIPv6_1, serverIPv6_2)
+		}
+	} else {
+		baseDomain = promptUser(reader, "Enter Base Domain Name (e.g. domain.ro / example.com)", "example.com")
+		ns1 = promptUser(reader, "Enter Primary Nameserver", "ns1.example.com")
+		ns2 = promptUser(reader, "Enter Secondary Nameserver", "ns2.example.com")
+		detectedIP := getPublicIP()
+		serverIP1 = promptUser(reader, "Enter Primary Server IP (for FQDN & NS1)", detectedIP)
+		serverIP2 = promptUser(reader, "Enter Secondary Server IP (for NS2, leave blank if same as IP1)", serverIP1)
+		if serverIP2 == "" {
+			serverIP2 = serverIP1
+		}
+
+		if useIPv6 {
+			detectedIPv6 := getPublicIPv6()
+			serverIPv6_1 = promptUser(reader, "Enter Primary Server IPv6 (for FQDN & NS1)", detectedIPv6)
+			serverIPv6_2 = promptUser(reader, "Enter Secondary Server IPv6 (for NS2, leave blank if same as IPv6_1)", serverIPv6_1)
+			if serverIPv6_2 == "" {
+				serverIPv6_2 = serverIPv6_1
+			}
+		}
 	}
 
-	webServer := promptUser(reader, "Select Web Server (apache2/nginx)", "apache2")
-	dbServer := promptUser(reader, "Select Postgres Database additionally? (mariadb is mandatory)", "n")
-	hasPostgres := strings.ToLower(dbServer) == "y"
+	webEngineChoices := []string{"Apache2", "Nginx"}
+	wsIdx := promptList(reader, "Select Web Server Engine:", webEngineChoices)
+	webServer := "apache2"
+	if wsIdx == 2 {
+		webServer = "nginx"
+	}
+
+	dbChoices := []string{"MariaDB Only", "MariaDB + Postgres"}
+	dbIdx := promptList(reader, "Select Database Stack:", dbChoices)
+	hasPostgres := (dbIdx == 2)
+
+	fwChoices := []string{"None (External/LAN)", "UFW", "nftables"}
+	fwIdx := promptList(reader, "Select Firewall:", fwChoices)
+	firewallChoice := "none"
+	if fwIdx == 2 {
+		firewallChoice = "ufw"
+	} else if fwIdx == 3 {
+		firewallChoice = "nftables"
+	}
+
+	ftpChoices := []string{"None", "Pure-FTPd"}
+	ftpIdx := promptList(reader, "Select FTP Server:", ftpChoices)
+	ftpChoice := "none"
+	if ftpIdx == 2 {
+		ftpChoice = "pure-ftpd"
+	}
 
 	mariaDBPass := promptUser(reader, "Enter new MariaDB Root Password", "root_secret_db")
 	postgresPass := ""
@@ -284,9 +391,16 @@ func main() {
 
 	fmt.Println("\nConfiguration Summary:")
 	fmt.Printf("- Hostname: %s\n", hostname)
-	fmt.Printf("- IPv6: %s\n", enableIPv6)
+	fmt.Printf("- Base Domain: %s\n", baseDomain)
+	fmt.Printf("- NS1: %s, NS2: %s\n", ns1, ns2)
+	fmt.Printf("- IPv4: %s\n", serverIP1)
+	if useIPv6 {
+		fmt.Printf("- IPv6: %s\n", serverIPv6_1)
+	}
 	fmt.Printf("- Web Server: %s\n", webServer)
 	fmt.Printf("- Postgres Support: %v\n", hasPostgres)
+	fmt.Printf("- Firewall: %s\n", firewallChoice)
+	fmt.Printf("- FTP Server: %s\n", ftpChoice)
 	fmt.Printf("- FQDN AutoSSL: %s\n", enableAutoSSL)
 
 	confirm := promptUser(reader, "Proceed with installation?", "y")
@@ -337,7 +451,18 @@ func main() {
 	}
 	packages = append(packages, phpPackages...)
 
-	packages = append(packages, "bind9", "postfix", "dovecot-imapd", "amavisd-new", "spamassassin", "clamav", "clamav-daemon", "pure-ftpd")
+	packages = append(packages, "bind9", "postfix", "dovecot-imapd", "amavisd-new", "spamassassin", "clamav", "clamav-daemon")
+
+	if ftpChoice == "pure-ftpd" {
+		packages = append(packages, "pure-ftpd")
+	}
+
+	if firewallChoice == "ufw" {
+		packages = append(packages, "ufw")
+	} else if firewallChoice == "nftables" {
+		packages = append(packages, "nftables")
+	}
+
 	err := oswrap.AptInstall(packages...)
 	if err != nil {
 
@@ -345,23 +470,31 @@ func main() {
 		log.Println("If you are not running as root on Debian/Ubuntu, packages mock-failed.")
 	}
 
-	fmt.Println("Configuring Initial UFW Rules...")
-	// In a real environment, we'd invoke the UFW Wrapper, but a direct exec works just as well for setup.
-	exec.Command("ufw", "--force", "enable").Run()
-	exec.Command("ufw", "allow", "22/tcp").Run()   // SSH
-	exec.Command("ufw", "allow", "53/tcp").Run()   // DNS
-	exec.Command("ufw", "allow", "53/udp").Run()   // DNS
-	exec.Command("ufw", "allow", "80/tcp").Run()   // HTTP
-	exec.Command("ufw", "allow", "443/tcp").Run()  // Allow HTTP/HTTPS for certbot and initial setup, even if panel isn't fully configured yet
-	exec.Command("ufw", "allow", "21/tcp").Run()   // FTP
-	exec.Command("ufw", "allow", "25/tcp").Run()   // SMTP
-	exec.Command("ufw", "allow", "143/tcp").Run()  // IMAP
-	exec.Command("ufw", "allow", "465/tcp").Run()  // SMTPS
-	exec.Command("ufw", "allow", "587/tcp").Run()  // SMTP Submission
-	exec.Command("ufw", "allow", "993/tcp").Run()  // IMAPS
-	exec.Command("ufw", "allow", "995/tcp").Run()  // POP3S
-	exec.Command("ufw", "allow", "8080/tcp").Run() // Panel HTTP
-	exec.Command("ufw", "allow", "8443/tcp").Run() // Panel HTTPS
+	if firewallChoice != "none" {
+		fmt.Printf("Configuring Initial %s Rules...\n", firewallChoice)
+		if firewallChoice == "ufw" {
+			exec.Command("ufw", "--force", "enable").Run()
+			exec.Command("ufw", "allow", "22/tcp").Run()  // SSH
+			exec.Command("ufw", "allow", "53/tcp").Run()  // DNS
+			exec.Command("ufw", "allow", "53/udp").Run()  // DNS
+			exec.Command("ufw", "allow", "80/tcp").Run()  // HTTP
+			exec.Command("ufw", "allow", "443/tcp").Run() // Allow HTTP/HTTPS
+			if ftpChoice == "pure-ftpd" {
+				exec.Command("ufw", "allow", "21/tcp").Run() // FTP
+			}
+			exec.Command("ufw", "allow", "25/tcp").Run()   // SMTP
+			exec.Command("ufw", "allow", "143/tcp").Run()  // IMAP
+			exec.Command("ufw", "allow", "465/tcp").Run()  // SMTPS
+			exec.Command("ufw", "allow", "587/tcp").Run()  // SMTP Submission
+			exec.Command("ufw", "allow", "993/tcp").Run()  // IMAPS
+			exec.Command("ufw", "allow", "995/tcp").Run()  // POP3S
+			exec.Command("ufw", "allow", "8080/tcp").Run() // Panel HTTP
+			exec.Command("ufw", "allow", "8443/tcp").Run() // Panel HTTPS
+		} else if firewallChoice == "nftables" {
+			log.Println("Note: basic nftables rules must be applied manually or via wrapper. Enabling service...")
+			exec.Command("systemctl", "enable", "--now", "nftables").Run()
+		}
+	}
 
 	fmt.Println("[3/5] Configuring FQDN and AutoSSL...")
 	useLetsEncrypt := strings.ToLower(enableAutoSSL) == "y"
@@ -414,6 +547,8 @@ func main() {
 		WebEngine:          webEngineSafe,
 		Databases:          dbList,
 		DNSServer:          "bind9",
+		Firewall:           firewallChoice,
+		FTPServer:          ftpChoice,
 		MariaDBRootPass:    mariaDBPass,
 		PostgresRootPass:   postgresPass,
 		SQLitePath:         "/var/lib/dashboard2go/panel.sqlite",
@@ -453,4 +588,3 @@ func main() {
 
 	installSystemdServices()
 }
-
