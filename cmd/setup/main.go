@@ -569,6 +569,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Warning: Could not open panel.sqlite: %v\n", err)
 	} else {
+		err = migrations.Migrate(db)
+		if err != nil {
+			log.Fatalf("FAILED to migrate db: %v", err)
+		}
+
 		_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS panel_users (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         username TEXT UNIQUE NOT NULL,

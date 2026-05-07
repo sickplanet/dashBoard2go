@@ -7,13 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"dashBoard2go/internal/api"
 	"dashBoard2go/internal/config"
+	"dashBoard2go/internal/db/migrations"
 	"dashBoard2go/internal/queue"
 	"dashBoard2go/internal/updater"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
@@ -35,23 +36,24 @@ func main() {
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		log.Fatalf("FAILED to open SQLite database: %v", err)
-
-		go func() {
-			for {
-				versionBytes, _ := os.ReadFile("VERSION")
-				currentVer := strings.TrimSpace(string(versionBytes))
-				updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)
-				time.Sleep(1 * time.Hour)
-			}
-		}()
-
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		log.Fatalf("FAILED to connect to SQLite database: %v", err)
+	// Apply database migrations on start
+	if err := migrations.Migrate(db); err != nil {
+		log.Fatalf("FAILED to apply database migrations: %v", err)
 	}
-	log.Println("SQLite Database connected successfully (WAL Mode).")
+
+	go func() {
+		for {
+			versionBytes, _ := os.ReadFile("VERSION")
+			currentVer := strings.TrimSpace(string(versionBytes))
+			updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)
+			time.Sleep(1 * time.Hour)
+		}
+	}()
+
+	log.Println("SQLite Database connected and migrated successfully (WAL Mode).")
 
 	q, err := queue.NewSQLiteQueue(db)
 	if err != nil {
@@ -74,60 +76,39 @@ func main() {
 	certPath := fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", conf.FQDN)
 	keyPath := fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", conf.FQDN)
 
-	hasCert := false
-	if _, err := os.Stat(certPath); err == nil {
-		if _, err := os.Stat(keyPath); err == nil {
-			hasCert = true
-		}
-	}
-
-	if hasCert && conf.FQDN != "" {
-		log.Printf("Booting HTTPS Core Server on %s (FQDN: %s)\n", httpsAddr, conf.FQDN)
-
+	if conf.UseLetsEncryptFQDN {
 		go func() {
-			log.Printf("Booting HTTP Proxy Listener on %s\n", httpAddr)
-			if err := r.Run(httpAddr); err != nil {
-				log.Printf("HTTP Server failed: %v", err)
+			log.Printf("Starting HTTP Server on %s (Redirecting to HTTPS)", httpAddr)
+			err := http.ListenAndServe(httpAddr, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				target := "https://" + req.Host + req.URL.Path
+				if len(req.URL.RawQuery) > 0 {
+					target += "?" + req.URL.RawQuery
+				}
+				http.Redirect(w, req, target, http.StatusTemporaryRedirect)
+			}))
+			if err != nil {
+				log.Printf("Warning: HTTP redirect server failed: %v", err)
 			}
 		}()
 
-		tlsConfig := &tls.Config{
-			GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				serverName := clientHello.ServerName
-				if serverName == "" {
-					serverName = conf.FQDN
-				}
-
-				userCertFile := fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", serverName)
-				userKeyFile := fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", serverName)
-
-				if _, err := os.Stat(userCertFile); os.IsNotExist(err) {
-					userCertFile = certPath
-					userKeyFile = keyPath
-				}
-
-				cert, err := tls.LoadX509KeyPair(userCertFile, userKeyFile)
-				if err != nil {
-					return nil, err
-				}
-				return &cert, nil
+		log.Printf("Starting HTTPS Server on %s", httpsAddr)
+		server := &http.Server{
+			Addr:    httpsAddr,
+			Handler: r,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
 			},
 		}
 
-		server := &http.Server{
-			Addr:      httpsAddr,
-			Handler:   r,
-			TLSConfig: tlsConfig,
-		}
-
-		log.Printf("Booting SNI-Aware HTTPS Core Server on %s\n", httpsAddr)
-		if err := server.ListenAndServeTLS(certPath, keyPath); err != nil {
-			log.Fatalf("Failed to run SNI TLS server: %v", err)
+		err = server.ListenAndServeTLS(certPath, keyPath)
+		if err != nil {
+			log.Fatalf("FAILED to start HTTPS Server: %v", err)
 		}
 	} else {
-		log.Printf("Booting HTTP Core Server on %s (SSL not found natively)\n", httpAddr)
-		if err := r.Run(httpAddr); err != nil {
-			log.Fatalf("Failed to run core server: %v", err)
+		log.Printf("Starting HTTP Server on %s (No SSL)", httpAddr)
+		err = r.Run(httpAddr)
+		if err != nil {
+			log.Fatalf("FAILED to start HTTP Server: %v", err)
 		}
 	}
 }
