@@ -406,7 +406,7 @@ func main() {
 		MariaDBRootPass:    mariaDBPass,
 		PostgresRootPass:   postgresPass,
 		SQLitePath:         "/var/lib/dashboard2go/panel.sqlite",
-		UpdaterEndpoint:    "https://api.github.com/repos/yourname/dashBoard2go/releases/latest",
+		UpdaterEndpoint:    "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest",
 	}
 
 	// Ensure the dashboard dir exists for the database
@@ -435,10 +435,10 @@ func main() {
 		db.Close()
 	}
 
-	installSystemdServices()
-
 	err = config.SaveConfig("config.json", panelConfig)
 	if err != nil {
 		log.Fatalf("CRITICAL: Could not save config.json: %v\n", err)
 	}
+
+	installSystemdServices()
 }

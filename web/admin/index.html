@@ -420,8 +420,14 @@ TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
                                     <h4 class="text-white mb-3">dashBoard2go Firmware Update</h4>
                                     <div class="card bg-dark border-secondary p-3">
                                         <p class="text-secondary text-center">Trigger a live OTA fetch against GitHub.</p>
-                                        <button class="btn btn-lg btn-success fw-bold w-100" onclick="applyUpdate()">Download & Install Latest Core</button>
-                                        <small class="text-secondary mt-2 text-center">This securely detaches the update process to prevent file-locks.</small>
+                                        <button id="checkUpdateBtn" class="btn btn-lg btn-primary fw-bold w-100" onclick="checkForUpdates()">Check For Updates</button>
+                                        <div id="updateInfoDiv" class="d-none mt-4 p-3 border border-success rounded bg-black">
+                                            <h5 class="text-success"><i class="bi bi-rocket-takeoff-fill me-2"></i> Update Available: <span id="updateVersionText"></span></h5>
+                                            <p class="text-secondary mb-1" id="updateDateText"></p>
+                                            <pre class="bg-dark text-white-50 p-2 mt-2 mb-3" style="font-size:0.85rem;" id="updateBodyText"></pre>
+                                            <button id="installUpdateBtn" class="btn btn-lg btn-success fw-bold w-100" onclick="applyUpdate()">Download & Install Latest Core</button>
+                                            <small class="text-secondary mt-2 d-block text-center">This securely detaches the update process to prevent file-locks.</small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -192,6 +192,30 @@
             }, 1500);
         }
         
+        async function checkForUpdates() {
+            try {
+                const data = await apiFetch('/api/v1/admin/updates/check', 'POST');
+                if(data.has_update && data.release) {
+                    document.getElementById('checkUpdateBtn').classList.add('d-none');
+                    document.getElementById('updateVersionText').innerText = data.release.name || data.release.tag_name;
+                    document.getElementById('updateDateText').innerText = "Published: " + new Date(data.release.published_at).toLocaleString();
+                    document.getElementById('updateBodyText').innerText = data.release.body || "No changelog provided.";
+                    document.getElementById('updateInfoDiv').classList.remove('d-none');
+                } else if(data.has_update) {
+                    // Fallback if release API struct failed but update exists
+                    document.getElementById('checkUpdateBtn').classList.add('d-none');
+                    document.getElementById('updateVersionText').innerText = data.version;
+                    document.getElementById('updateDateText').innerText = "New release found in DB cache.";
+                    document.getElementById('updateBodyText').innerText = "Available version: " + data.version;
+                    document.getElementById('updateInfoDiv').classList.remove('d-none');
+                } else {
+                    alert('You are already on the latest version.');
+                }
+            } catch(e) {
+                alert('Network error passing check payload signal.');
+            }
+        }
+
         async function applyUpdate() {
             if(!confirm("Are you sure you want to construct the firmware updates?\nServices will go offline and you will be transitioned to the Live Monitoring view.")) return;
             try {
