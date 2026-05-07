@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/queue"
+	"dashBoard2go/internal/updater"
 	"dashBoard2go/internal/wrappers/firewall"
 
 	"github.com/gin-gonic/gin"
@@ -111,7 +113,16 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 				c.JSON(200, gin.H{"status": "Admin API OK"})
 			})
 			admin.GET("/services", func(c *gin.Context) {
-				services := []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
+				conf, err := config.LoadConfig("config.json")
+				var services []string
+				if err == nil {
+					services = []string{conf.WebEngine, conf.DNSServer, "postfix", "dovecot"}
+					services = append(services, conf.Databases...)
+				} else {
+					// Fallback just in case
+					services = []string{"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot"}
+				}
+
 				var statuses []map[string]interface{}
 				for _, s := range services {
 					statuses = append(statuses, oswrap.GetServiceStatus(s))
@@ -127,6 +138,56 @@ func SetupRoutes(r *gin.Engine, db *sql.DB, q queue.JobQueue) {
 					return
 				}
 				c.JSON(200, gin.H{"update_available": update})
+			})
+
+			admin.POST("/updates/check", func(c *gin.Context) {
+				conf, err := config.LoadConfig("config.json")
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Config schema not found"})
+					return
+				}
+
+				err = updater.CheckForUpdates(db, conf.PanelVersion)
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+
+				var update string
+				db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&update)
+				if update != "" && update != "false" {
+					client := http.Client{Timeout: 5 * time.Second}
+					resp, reqErr := client.Get("https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest")
+					if reqErr == nil {
+						defer resp.Body.Close()
+						var release map[string]interface{}
+						if err := json.NewDecoder(resp.Body).Decode(&release); err == nil {
+							c.JSON(200, gin.H{"has_update": true, "version": update, "release": release})
+							return
+						}
+					}
+					c.JSON(200, gin.H{"has_update": true, "version": update})
+				} else {
+					c.JSON(200, gin.H{"has_update": false, "message": "You are on the latest version."})
+				}
+			})
+
+			admin.POST("/updates/apply", func(c *gin.Context) {
+				var targetVersion string
+				db.QueryRow("SELECT value FROM system_settings WHERE key = 'update_available'").Scan(&targetVersion)
+				if targetVersion == "" || targetVersion == "false" {
+					c.JSON(400, gin.H{"error": "No update target available in DB cache."})
+					return
+				}
+
+				// Safely detached payload delivery
+				err := updater.ApplyUpdate(targetVersion)
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+
+				c.JSON(200, gin.H{"status": "ok", "message": "Update script detached and executing."})
 			})
 
 			admin.GET("/firewall", func(c *gin.Context) {

@@ -10,7 +10,6 @@ import (
 
 	"dashBoard2go/internal/api"
 	"dashBoard2go/internal/config"
-	"dashBoard2go/internal/db/migrations"
 	"dashBoard2go/internal/queue"
 
 	"github.com/gin-gonic/gin"
@@ -41,15 +40,6 @@ func main() {
 	}
 	log.Println("SQLite Database connected successfully (WAL Mode).")
 
-	if err := migrations.Migrate(db); err != nil {
-		log.Fatalf("FAILED to run SQLite migrations: %v", err)
-	}
-
-	log.Println("Checking and running DB migrations...")
-	if err := migrations.Migrate(db); err != nil {
-		log.Fatalf("FAILED to run SQLite migrations: %v", err)
-	}
-
 	q, err := queue.NewSQLiteQueue(db)
 	if err != nil {
 		log.Fatalf("FAILED to init queue: %v", err)
@@ -63,15 +53,21 @@ func main() {
 	r.Static("/admin", "./web/admin")
 	r.Static("/user", "./web/user")
 	r.Static("/shared", "./web/shared")
-	r.Static("/js", "./web/js")
 
 	httpAddr := fmt.Sprintf(":%d", conf.PanelPortHTTP)
 	httpsAddr := fmt.Sprintf(":%d", conf.PanelPortHTTPS)
 
-	if conf.UseLetsEncryptFQDN && conf.FQDN != "" {
-		certPath := fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", conf.FQDN)
-		keyPath := fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", conf.FQDN)
+	certPath := fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", conf.FQDN)
+	keyPath := fmt.Sprintf("/etc/letsencrypt/live/%s/privkey.pem", conf.FQDN)
 
+	hasCert := false
+	if _, err := os.Stat(certPath); err == nil {
+		if _, err := os.Stat(keyPath); err == nil {
+			hasCert = true
+		}
+	}
+
+	if hasCert && conf.FQDN != "" {
 		log.Printf("Booting HTTPS Core Server on %s (FQDN: %s)\n", httpsAddr, conf.FQDN)
 
 		go func() {
@@ -111,11 +107,11 @@ func main() {
 		}
 
 		log.Printf("Booting SNI-Aware HTTPS Core Server on %s\n", httpsAddr)
-		if err := server.ListenAndServeTLS("", ""); err != nil {
+		if err := server.ListenAndServeTLS(certPath, keyPath); err != nil {
 			log.Fatalf("Failed to run SNI TLS server: %v", err)
 		}
 	} else {
-		log.Printf("Booting HTTP Core Server on %s (SSL Disabled)\n", httpAddr)
+		log.Printf("Booting HTTP Core Server on %s (SSL not found natively)\n", httpAddr)
 		if err := r.Run(httpAddr); err != nil {
 			log.Fatalf("Failed to run core server: %v", err)
 		}

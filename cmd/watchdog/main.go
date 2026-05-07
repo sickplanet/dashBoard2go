@@ -10,6 +10,7 @@ import (
 	"dashBoard2go/internal/config"
 	"dashBoard2go/internal/oswrap"
 	"dashBoard2go/internal/wrappers/firewall"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -29,8 +30,11 @@ func main() {
 	defer db.Close()
 
 	criticalServices := []string{
-		"nginx", "apache2", "mariadb", "postgresql", "bind9", "postfix", "dovecot", "amavis", "pure-ftpd", "ufw",
+		conf.WebEngine,
+		conf.DNSServer,
+		"postfix", "dovecot", "amavis", "pure-ftpd", "ufw",
 	}
+	criticalServices = append(criticalServices, conf.Databases...)
 
 	ufwWrapper := firewall.NewUFWWrapper(nil)
 

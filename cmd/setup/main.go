@@ -269,7 +269,7 @@ func main() {
 		}
 	}
 
-	webServer := promptUser(reader, "Select Web Server (apache/nginx)", "nginx")
+	webServer := promptUser(reader, "Select Web Server (apache2/nginx)", "apache2")
 	dbServer := promptUser(reader, "Select Postgres Database additionally? (mariadb is mandatory)", "n")
 	hasPostgres := strings.ToLower(dbServer) == "y"
 
@@ -348,12 +348,12 @@ func main() {
 	fmt.Println("Configuring Initial UFW Rules...")
 	// In a real environment, we'd invoke the UFW Wrapper, but a direct exec works just as well for setup.
 	exec.Command("ufw", "--force", "enable").Run()
-	exec.Command("ufw", "allow", "22/tcp").Run()
-	exec.Command("ufw", "allow", "53/tcp").Run() // DNS
-	exec.Command("ufw", "allow", "53/udp").Run() // DNS
-	exec.Command("ufw", "allow", "80/tcp").Run()
-	exec.Command("ufw", "allow", "443/tcp").Run()
-	exec.Command("ufw", "allow", "21/tcp").Run()
+	exec.Command("ufw", "allow", "22/tcp").Run()   // SSH
+	exec.Command("ufw", "allow", "53/tcp").Run()   // DNS
+	exec.Command("ufw", "allow", "53/udp").Run()   // DNS
+	exec.Command("ufw", "allow", "80/tcp").Run()   // HTTP
+	exec.Command("ufw", "allow", "443/tcp").Run()  // Allow HTTP/HTTPS for certbot and initial setup, even if panel isn't fully configured yet
+	exec.Command("ufw", "allow", "21/tcp").Run()   // FTP
 	exec.Command("ufw", "allow", "25/tcp").Run()   // SMTP
 	exec.Command("ufw", "allow", "143/tcp").Run()  // IMAP
 	exec.Command("ufw", "allow", "465/tcp").Run()  // SMTPS
@@ -391,6 +391,16 @@ func main() {
 
 	fmt.Println("[5/5] Storing Configuration & Seeding Admin DB...")
 
+	dbList := []string{"mariadb"}
+	if hasPostgres {
+		dbList = append(dbList, "postgresql")
+	}
+
+	webEngineSafe := strings.ToLower(webServer)
+	if webEngineSafe == "apache" {
+		webEngineSafe = "apache2"
+	}
+
 	// Create the configuration payload
 	panelConfig := &config.PanelConfig{
 		Installed:          true,
@@ -401,12 +411,13 @@ func main() {
 		UseLetsEncryptFQDN: useLetsEncrypt,
 		PanelPortHTTP:      8080,
 		PanelPortHTTPS:     8443,
-		WebEngine:          strings.ToLower(webServer),
-		HasPostgres:        hasPostgres,
+		WebEngine:          webEngineSafe,
+		Databases:          dbList,
+		DNSServer:          "bind9",
 		MariaDBRootPass:    mariaDBPass,
 		PostgresRootPass:   postgresPass,
 		SQLitePath:         "/var/lib/dashboard2go/panel.sqlite",
-		UpdaterEndpoint:    "https://api.github.com/repos/yourname/dashBoard2go/releases/latest",
+		UpdaterEndpoint:    "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest",
 	}
 
 	// Ensure the dashboard dir exists for the database
@@ -435,10 +446,11 @@ func main() {
 		db.Close()
 	}
 
-	installSystemdServices()
-
 	err = config.SaveConfig("config.json", panelConfig)
 	if err != nil {
 		log.Fatalf("CRITICAL: Could not save config.json: %v\n", err)
 	}
+
+	installSystemdServices()
 }
+
