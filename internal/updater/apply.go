@@ -99,8 +99,11 @@ mkdir -p /tmp/dashboard2go_extract
 %s
 
 log "4. Swapping target executables and web dir..."
-cp -R /tmp/dashboard2go_extract/dashboard2go-* %s/ || true
-cp -R /tmp/dashboard2go_extract/web %s/ || true
+if [ -d "/tmp/dashboard2go_extract/dashBoard2go" ]; then
+    cp -R /tmp/dashboard2go_extract/dashBoard2go/* %s/ || true
+else
+    cp -R /tmp/dashboard2go_extract/* %s/ || true
+fi
 
 log "5. Binding permissions..."
 chmod +x %s/dashboard2go-* || true
