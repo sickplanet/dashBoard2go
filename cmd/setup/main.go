@@ -507,20 +507,20 @@ func main() {
 	exec.Command("systemctl", "restart", "bind9").Run()
 	time.Sleep(5 * time.Second)
 
-        if !useLetsEncrypt {
-                configureDefaultWebServer(webServer, hostname, false)
-        }
+	if !useLetsEncrypt {
+		configureDefaultWebServer(webServer, hostname, false)
+	}
 
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
 		if err != nil {
 			log.Printf("Warning: Failed to procure initial SSL: %v\n", err)
 			log.Println("Ensure DNS A records point to this server. SSL will require manual init.")
-                        configureDefaultWebServer(webServer, hostname, false)
+			configureDefaultWebServer(webServer, hostname, false)
 			useLetsEncrypt = false
 		} else {
 			fmt.Println("SSL Successfully provisioned!")
-                        configureDefaultWebServer(webServer, hostname, useLetsEncrypt)
+			configureDefaultWebServer(webServer, hostname, useLetsEncrypt)
 		}
 	}
 
@@ -610,14 +610,14 @@ func main() {
 }
 
 func configureDefaultWebServer(webServer, fqdn string, useSSL bool) {
-if webServer == "apache2" {
-fmt.Println("Configuring default Apache2 vhost...")
-exec.Command("a2enmod", "ssl").Run()
-exec.Command("a2enmod", "headers").Run()
+	if webServer == "apache2" {
+		fmt.Println("Configuring default Apache2 vhost...")
+		exec.Command("a2enmod", "ssl").Run()
+		exec.Command("a2enmod", "headers").Run()
 
-var vhostContent string
-if useSSL {
-vhostContent = fmt.Sprintf(`<VirtualHost *:80>
+		var vhostContent string
+		if useSSL {
+			vhostContent = fmt.Sprintf(`<VirtualHost *:80>
 ServerName %s
 DocumentRoot /var/www/html
 Redirect permanent / https://%s/
@@ -639,8 +639,8 @@ AllowOverride All
 Require all granted
 </Directory>
 </VirtualHost>`, fqdn, fqdn, fqdn, fqdn, fqdn)
-} else {
-vhostContent = fmt.Sprintf(`<VirtualHost *:80>
+		} else {
+			vhostContent = fmt.Sprintf(`<VirtualHost *:80>
 ServerName %s
 DocumentRoot /var/www/html
 
@@ -652,15 +652,15 @@ AllowOverride All
 Require all granted
 </Directory>
 </VirtualHost>`, fqdn)
-}
+		}
 
-os.WriteFile("/etc/apache2/sites-available/000-default.conf", []byte(vhostContent), 0644)
-exec.Command("systemctl", "restart", "apache2").Run()
-} else if webServer == "nginx" {
-fmt.Println("Configuring default Nginx vhost...")
-var vhostContent string
-if useSSL {
-vhostContent = fmt.Sprintf(`server {
+		os.WriteFile("/etc/apache2/sites-available/000-default.conf", []byte(vhostContent), 0644)
+		exec.Command("systemctl", "restart", "apache2").Run()
+	} else if webServer == "nginx" {
+		fmt.Println("Configuring default Nginx vhost...")
+		var vhostContent string
+		if useSSL {
+			vhostContent = fmt.Sprintf(`server {
     listen 80 default_server;
     server_name %s;
     return 301 https://$host$request_uri;
@@ -680,8 +680,8 @@ server {
         try_files $uri $uri/ =404;
     }
 }`, fqdn, fqdn, fqdn, fqdn)
-} else {
-vhostContent = fmt.Sprintf(`server {
+		} else {
+			vhostContent = fmt.Sprintf(`server {
     listen 80 default_server;
     server_name %s;
     root /var/www/html;
@@ -692,8 +692,8 @@ vhostContent = fmt.Sprintf(`server {
         try_files $uri $uri/ =404;
     }
 }`, fqdn)
-}
-os.WriteFile("/etc/nginx/sites-available/default", []byte(vhostContent), 0644)
-exec.Command("systemctl", "restart", "nginx").Run()
-}
+		}
+		os.WriteFile("/etc/nginx/sites-available/default", []byte(vhostContent), 0644)
+		exec.Command("systemctl", "restart", "nginx").Run()
+	}
 }
