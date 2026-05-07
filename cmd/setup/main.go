@@ -507,14 +507,20 @@ func main() {
 	exec.Command("systemctl", "restart", "bind9").Run()
 	time.Sleep(5 * time.Second)
 
+	if !useLetsEncrypt {
+		configureDefaultWebServer(webServer, hostname, false)
+	}
+
 	if useLetsEncrypt {
 		err := getCertForFQDN(hostname)
 		if err != nil {
 			log.Printf("Warning: Failed to procure initial SSL: %v\n", err)
 			log.Println("Ensure DNS A records point to this server. SSL will require manual init.")
+			configureDefaultWebServer(webServer, hostname, false)
 			useLetsEncrypt = false
 		} else {
 			fmt.Println("SSL Successfully provisioned!")
+			configureDefaultWebServer(webServer, hostname, useLetsEncrypt)
 		}
 	}
 
@@ -601,4 +607,93 @@ func main() {
 	}
 
 	installSystemdServices()
+}
+
+func configureDefaultWebServer(webServer, fqdn string, useSSL bool) {
+	if webServer == "apache2" {
+		fmt.Println("Configuring default Apache2 vhost...")
+		exec.Command("a2enmod", "ssl").Run()
+		exec.Command("a2enmod", "headers").Run()
+
+		var vhostContent string
+		if useSSL {
+			vhostContent = fmt.Sprintf(`<VirtualHost *:80>
+ServerName %s
+DocumentRoot /var/www/html
+Redirect permanent / https://%s/
+</VirtualHost>
+
+<VirtualHost *:443>
+ServerName %s
+DocumentRoot /var/www/html
+
+SSLEngine on
+SSLCertificateFile /etc/letsencrypt/live/%s/fullchain.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/%s/privkey.pem
+
+<Directory /var/www/html>
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
+AllowOverride All
+Require all granted
+</Directory>
+</VirtualHost>`, fqdn, fqdn, fqdn, fqdn, fqdn)
+		} else {
+			vhostContent = fmt.Sprintf(`<VirtualHost *:80>
+ServerName %s
+DocumentRoot /var/www/html
+
+<Directory /var/www/html>
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
+AllowOverride All
+Require all granted
+</Directory>
+</VirtualHost>`, fqdn)
+		}
+
+		os.WriteFile("/etc/apache2/sites-available/000-default.conf", []byte(vhostContent), 0644)
+		exec.Command("systemctl", "restart", "apache2").Run()
+	} else if webServer == "nginx" {
+		fmt.Println("Configuring default Nginx vhost...")
+		var vhostContent string
+		if useSSL {
+			vhostContent = fmt.Sprintf(`server {
+    listen 80 default_server;
+    server_name %s;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl default_server;
+    server_name %s;
+    root /var/www/html;
+
+    ssl_certificate /etc/letsencrypt/live/%s/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/%s/privkey.pem;
+
+    location / {
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+        try_files $uri $uri/ =404;
+    }
+}`, fqdn, fqdn, fqdn, fqdn)
+		} else {
+			vhostContent = fmt.Sprintf(`server {
+    listen 80 default_server;
+    server_name %s;
+    root /var/www/html;
+
+    location / {
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+        try_files $uri $uri/ =404;
+    }
+}`, fqdn)
+		}
+		os.WriteFile("/etc/nginx/sites-available/default", []byte(vhostContent), 0644)
+		exec.Command("systemctl", "restart", "nginx").Run()
+	}
 }
