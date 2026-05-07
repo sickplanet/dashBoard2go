@@ -52,7 +52,7 @@ func checkForUpdates(conf *config.PanelConfig) {
 	}
 	defer db.Close()
 
-	err = updater.CheckForUpdates(db, conf.PanelVersion)
+	err = updater.CheckForUpdates(db, conf.PanelVersion, conf.UpdaterEndpoint)
 	if err != nil {
 		log.Printf("[Updater] Check for updates failed: %v\n", err)
 	}

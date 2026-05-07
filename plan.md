@@ -231,3 +231,9 @@ dashBoard2go is a free, open-source web server control panel (cPanel alternative
 - [x] Modified `internal/updater/apply.go` to explicitly wipe log payloads (`> $LOG_TMP` and `> $LOG_PUBLIC`) immediately cleanly initializing outputs instead of concatenating infinite logs across updates.
 - [x] Added strict `v%s` tag string injection in `apply.go`'s `wget` extraction correcting GitHub's download URL payload requirements and returning HTTP 200 via `Wget`. 
 - [x] Guarded `fetchUpdates` logic inside `web/js/admin.js` specifically catching inner DOM elements ensuring frontend Javascript threads don't crash loops. 
+
+## Final Wget & Updates Path Polish
+- [x] Refactored `internal/updater/check.go` and `internal/updater/apply.go` to explicitly consume `conf.UpdaterEndpoint` avoiding hardcoded GitHub URL strings and respecting user modifications.
+- [x] Switched `ApplyUpdate` to natively perform a `client.Get` on the GitHub API fetching the structured `.json` payload dynamically injecting `browser_download_url`.
+- [x] Updated Detached Bash Payload in `ApplyUpdate` logic dynamically executing `unzip -q` if the `.assets[0].name` payload structure reveals a `.zip` artifact instead of `.tar.gz`.
+- [x] Injected an asynchronous hourly goroutine inside `cmd/core/main.go` firing `updater.CheckForUpdates(db, currentVer, conf.UpdaterEndpoint)` ensuring the Sidebar UI `data.update_available` stays strictly synchronous dynamically rather than displaying outdated smaller versions.

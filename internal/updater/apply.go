@@ -1,21 +1,70 @@
 package updater
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"time"
 )
 
+type applyGitHubRelease struct {
+	Assets []struct {
+		BrowserDownloadURL string `json:"browser_download_url"`
+		Name               string `json:"name"`
+	} `json:"assets"`
+}
+
 // ApplyUpdate writes a decoupled script and runs it in the background
-func ApplyUpdate(targetVersion string) error {
+func ApplyUpdate(targetVersion string, endpoint string) error {
+	if endpoint == "" {
+		endpoint = "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest"
+	}
+	if endpoint == "" {
+		endpoint = "https://api.github.com/repos/sickplanet/dashBoard2go/releases/latest"
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("could not get cwd: %v", err)
 	}
 
+	// Fetch dynamic asset URL
+	client := http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(endpoint)
+	if err != nil {
+		return fmt.Errorf("failed checking latest release: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var release applyGitHubRelease
+	if err := json.Unmarshal(body, &release); err != nil {
+		return err
+	}
+
+	if len(release.Assets) == 0 {
+		return fmt.Errorf("no release assets found")
+	}
+
+	downloadURL := release.Assets[0].BrowserDownloadURL
+	assetName := release.Assets[0].Name // e.g. dashboard2go-linux-amd64-v1.0.14.zip
+
 	scriptPath := "/tmp/dashboard2go-apply-update.sh"
+
+	// Check if it's a zip or tar
+	extractCmd := ""
+	if len(assetName) > 4 && assetName[len(assetName)-4:] == ".zip" {
+		extractCmd = fmt.Sprintf("unzip -q /tmp/dashboard2go_payload -d /tmp/dashboard2go_extract/ || log \"Warning: Unzip extract failed\"")
+	} else {
+		extractCmd = fmt.Sprintf("tar -xzf /tmp/dashboard2go_payload -C /tmp/dashboard2go_extract/ || log \"Warning: Tar extract failed\"")
+	}
 
 	scriptContent := fmt.Sprintf(`#!/bin/bash
 set -e
@@ -44,10 +93,10 @@ log "2. Removing old locked binaries..."
 rm -f %s/dashboard2go-*
 
 log "3. Extracting and staging payload..."
-log "Fetching %s from Github..."
-wget -q "https://github.com/sickplanet/dashBoard2go/releases/download/v%s/dashboard2go-linux-amd64.tar.gz" -O /tmp/dashboard2go.tar.gz || log "Warning: Wget failed"
+log "Fetching payload from Github..."
+wget -q "%s" -O /tmp/dashboard2go_payload || log "Warning: Wget failed"
 mkdir -p /tmp/dashboard2go_extract
-tar -xzf /tmp/dashboard2go.tar.gz -C /tmp/dashboard2go_extract/ || log "Warning: Tar extract failed"
+%s
 
 log "4. Swapping target executables and web dir..."
 cp -R /tmp/dashboard2go_extract/dashboard2go-* %s/ || true
@@ -64,8 +113,9 @@ systemctl start dashboard2go-updater || true
 
 log "Update completed successfully. Target payload active."
 rm -f /tmp/dashboard2go-apply-update.sh
-rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go.tar.gz
-`, targetVersion, cwd, targetVersion, targetVersion, cwd, cwd, cwd)
+rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go_payload
+`, targetVersion, cwd, downloadURL, extractCmd, cwd, cwd, cwd)
+
 	err = ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return fmt.Errorf("failed writing decoupled update script: %w", err)
