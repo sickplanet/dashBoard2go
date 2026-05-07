@@ -241,3 +241,7 @@ dashBoard2go is a free, open-source web server control panel (cPanel alternative
 ## Test Resolution: Fix compiler definitions for updating sequence
 - [x] Removed compiler errors (`undefined: conf`) generated during CI test phases inside `internal/api/routes.go` across the `updater.CheckForUpdates` logic. Updated definition mapping struct pointers safely bypassing closures scope locks.
 - [x] Passed all definitions cleanly across `go test -v ./...`.
+
+## Final Extraction Pathway Fix (ZIP vs TAR Artifact Structure Maps)
+- [x] Detected critical structural mismatch with GitHub Actions packaging. The `.zip` artifacts from `releases/latest` retain the parent `dashBoard2go` directory prefix causing the `ApplyUpdate` detached script's standard `./dashboard2go_extract/*` wildcard copying mechanism to completely miss all payload paths, silently exiting zero via `|| true` guards and breaking post-update `systemctl start` operations.
+- [x] Patched `ApplyUpdate` bash string payload injecting an explicit `[ -d "/tmp/dashboard2go_extract/dashBoard2go" ]` evaluation branch detecting and recursively mapping children natively before initiating ecosystem execution bounds restoring `/api/v1/admin/updates/log` capabilities naturally upon restart.
