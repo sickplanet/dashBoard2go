@@ -42,35 +42,64 @@ func main() {
 	defer ticker.Stop()
 
 	// Initial synchronous start for loop
-	for {
-		select {
-		case <-ticker.C:
-			// 1. Service Health Checks
-			for _, service := range criticalServices {
-				if !oswrap.IsActive(service) {
-					log.Printf("[Watchdog] ALERT: %s is DOWN. Attempting recovery...\n", service)
-					err := oswrap.RestartService(service)
-					if err != nil {
-						log.Printf("[Watchdog] ERROR: Failed to recover %s: %v\n", service, err)
-					} else {
-						log.Printf("[Watchdog] SUCCESS: %s recovered successfully.\n", service)
-					}
+	for range ticker.C {
+		// 1. Service Health Checks
+		for _, service := range criticalServices {
+			if !oswrap.IsActive(service) {
+				log.Printf("[Watchdog] ALERT: %s is DOWN. Attempting recovery...\n", service)
+
+				if err := oswrap.RestartService(service); err != nil {
+					log.Printf("[Watchdog] ERROR: Failed to recover %s: %v\n", service, err)
+				} else {
+					log.Printf("[Watchdog] SUCCESS: %s recovered successfully.\n", service)
 				}
 			}
-
-			// 2. Firewall Rule Integrity
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			reconfigured, err := ufwWrapper.Sync(ctx)
-			cancel()
-
-			if err != nil {
-				log.Printf("[Watchdog] ERROR: Firewall Sync check failed: %v\n", err)
-			} else if reconfigured {
-				log.Println("[Watchdog] WARNING: UFW Rules diverged. Auto-reconfigured to match DB state.")
-			}
-
-			// 3. User Log Analysis mapped dynamically from SQLite routing!
-			analyzeUserLogs(db)
 		}
+
+		// 2. Firewall Rule Integrity
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		reconfigured, err := ufwWrapper.Sync(ctx)
+		cancel()
+
+		if err != nil {
+			log.Printf("[Watchdog] ERROR: Firewall Sync check failed: %v\n", err)
+		} else if reconfigured {
+			log.Println("[Watchdog] WARNING: UFW Rules diverged. Auto-reconfigured to match DB state.")
+		}
+
+		// 3. User Log Analysis mapped dynamically from SQLite routing!
+		analyzeUserLogs(db)
 	}
+	//If this watchdog may later need:shutdown signals,context cancellation,reload events,async commands... replace with commented version
+	// for {
+	// 	select {
+	// 	case <-ticker.C:
+	// 		// 1. Service Health Checks
+	// 		for _, service := range criticalServices {
+	// 			if !oswrap.IsActive(service) {
+	// 				log.Printf("[Watchdog] ALERT: %s is DOWN. Attempting recovery...\n", service)
+	// 				err := oswrap.RestartService(service)
+	// 				if err != nil {
+	// 					log.Printf("[Watchdog] ERROR: Failed to recover %s: %v\n", service, err)
+	// 				} else {
+	// 					log.Printf("[Watchdog] SUCCESS: %s recovered successfully.\n", service)
+	// 				}
+	// 			}
+	// 		}
+
+	// 		// 2. Firewall Rule Integrity
+	// 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// 		reconfigured, err := ufwWrapper.Sync(ctx)
+	// 		cancel()
+
+	// 		if err != nil {
+	// 			log.Printf("[Watchdog] ERROR: Firewall Sync check failed: %v\n", err)
+	// 		} else if reconfigured {
+	// 			log.Println("[Watchdog] WARNING: UFW Rules diverged. Auto-reconfigured to match DB state.")
+	// 		}
+
+	// 		// 3. User Log Analysis mapped dynamically from SQLite routing!
+	// 		analyzeUserLogs(db)
+	// 	}
+
 }

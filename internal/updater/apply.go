@@ -119,7 +119,7 @@ rm -f /tmp/dashboard2go-apply-update.sh
 rm -rf /tmp/dashboard2go_extract /tmp/dashboard2go_payload
 `, targetVersion, cwd, downloadURL, extractCmd, cwd, cwd, cwd)
 
-	err = ioutil.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	if err != nil {
 		return fmt.Errorf("failed writing decoupled update script: %w", err)
 	}
