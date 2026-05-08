@@ -61,9 +61,9 @@ func ApplyUpdate(targetVersion string, endpoint string) error {
 	// Check if it's a zip or tar
 	extractCmd := ""
 	if len(assetName) > 4 && assetName[len(assetName)-4:] == ".zip" {
-		extractCmd = fmt.Sprintf("unzip -q /tmp/dashboard2go_payload -d /tmp/dashboard2go_extract/ || log \"Warning: Unzip extract failed\"")
+		extractCmd = "unzip -q /tmp/dashboard2go_payload -d /tmp/dashboard2go_extract/ || log \"Warning: Unzip extract failed\""
 	} else {
-		extractCmd = fmt.Sprintf("tar -xzf /tmp/dashboard2go_payload -C /tmp/dashboard2go_extract/ || log \"Warning: Tar extract failed\"")
+		extractCmd = "tar -xzf /tmp/dashboard2go_payload -C /tmp/dashboard2go_extract/ || log \"Warning: Tar extract failed\""
 	}
 
 	scriptContent := fmt.Sprintf(`#!/bin/bash
