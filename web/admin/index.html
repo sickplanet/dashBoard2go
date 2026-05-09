@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/css/admin.css">
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
@@ -17,32 +19,85 @@
                 <div class="position-sticky pt-3">
                     <h4 class="text-white text-center mb-4">dashBoard2go</h4>
                     <ul class="nav flex-column">
-                        <li class="nav-item"><a class="nav-link active" href="#dashboard" data-bs-toggle="pill"><i class="bi bi-speedometer2 me-2"></i> Server Status</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="pill"><i class="bi bi-people me-2"></i> Users</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#databases" data-bs-toggle="pill"><i class="bi bi-database me-2"></i> Databases</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#email" data-bs-toggle="pill"><i class="bi bi-envelope me-2"></i> Email</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#php" data-bs-toggle="pill"><i class="bi bi-filetype-php me-2"></i> PHP Versions</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#firewall" data-bs-toggle="pill"><i class="bi bi-shield-lock me-2"></i> Firewall</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#dns" data-bs-toggle="pill"><i class="bi bi-diagram-3 me-2"></i> DNS</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#system" data-bs-toggle="pill"><i class="bi bi-cpu me-2"></i> System Context</a></li>
-                        <li class="nav-item mt-4"><a class="nav-link text-warning" href="/user"><i class="bi bi-arrow-return-right me-2"></i> Switch to User UI</a></li>
-                        <li class="nav-item mt-2 d-none" id="updateMenu"><a class="nav-link text-success fw-bold" href="#" onclick="applyUpdate()"><i class="bi bi-cloud-download me-2"></i> Update Available <span class="badge bg-danger ms-2" id="updateBadge"></span></a></li>
+                        <li class="nav-item"><a class="nav-link active" href="#dashboard" data-bs-toggle="pill"><i
+                                    class="bi bi-speedometer2 me-2"></i> Server Status</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="pill"><i
+                                    class="bi bi-people me-2"></i> Users</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#databases" data-bs-toggle="pill"><i
+                                    class="bi bi-database me-2"></i> Databases</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#email" data-bs-toggle="pill"><i
+                                    class="bi bi-envelope me-2"></i> Email</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#php" data-bs-toggle="pill"><i
+                                    class="bi bi-filetype-php me-2"></i> PHP Versions</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#firewall" data-bs-toggle="pill"><i
+                                    class="bi bi-shield-lock me-2"></i> Firewall</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#dns" data-bs-toggle="pill"><i
+                                    class="bi bi-diagram-3 me-2"></i> DNS</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#system" data-bs-toggle="pill"><i
+                                    class="bi bi-cpu me-2"></i> System Context</a></li>
+                        <li class="nav-item mt-4"><a class="nav-link text-warning" href="/user"><i
+                                    class="bi bi-arrow-return-right me-2"></i> Switch to User UI</a></li>
+                        <li class="nav-item mt-2 d-none" id="updateMenu"><a class="nav-link text-success fw-bold"
+                                href="#" onclick="applyUpdate()"><i class="bi bi-cloud-download me-2"></i> Update
+                                Available <span class="badge bg-danger ms-2" id="updateBadge"></span></a></li>
+                        <li class="nav-item submenu-wrapper" id="SystemContext">
+
+                            <a class="nav-link submenu-toggle" data-bs-toggle="collapse" href="#systemSubmenu"
+                                role="button">
+
+                                <!-- Outline icon -->
+                                <i class="bi bi-cpu me-2 icon-outline"></i>
+
+                                <!-- Filled icon -->
+                                <i class="bi bi-cpu-fill me-2 icon-fill"></i>
+                                System Context2
+                            </a>
+
+                            <ul class="collapse nav flex-column ms-3" id="systemSubmenu">
+
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#server-config" data-bs-toggle="pill">
+                                        Server Config
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#apt-manager" data-bs-toggle="pill">
+                                        APT Packages
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#os-update" data-bs-toggle="pill">
+                                        OS-Update
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#panel-update" data-bs-toggle="pill">
+                                        Panel Update
+                                    </a>
+                                </li>
+
+                            </ul>
+
+                        </li>
                     </ul>
                 </div>
             </nav>
 
             <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom border-secondary">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom border-secondary">
                     <h1 class="h2 text-white">Administration</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <span class="text-secondary mt-2 me-3">Logged in as Root Admin</span>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="logout()"><i
+                                class="bi bi-box-arrow-right"></i> Logout</button>
                     </div>
                 </div>
 
                 <div class="tab-content" id="v-pills-tabContent">
-                    
+
                     <!-- Dashboard / Status Tab -->
                     <div class="tab-pane fade show active" id="dashboard">
                         <div class="row">
@@ -75,12 +130,14 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Watchdog Service Status -->
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="card p-3">
-                                    <h5 class="card-title text-secondary">Watchdog Services Status <button class="btn btn-sm btn-outline-info float-end" onclick="fetchServices()">Refresh</button></h5>
+                                    <h5 class="card-title text-secondary">Watchdog Services Status <button
+                                            class="btn btn-sm btn-outline-info float-end"
+                                            onclick="fetchServices()">Refresh</button></h5>
                                     <div id="servicesStatus" class="d-flex flex-wrap gap-2 mt-2">
                                         <span class="badge bg-secondary">Loading...</span>
                                     </div>
@@ -98,7 +155,14 @@
                             </div>
                             <div class="card-body table-responsive">
                                 <table class="table table-dark table-hover">
-                                    <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Username</th>
+                                            <th>Role</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="usersTable">
                                         <!-- Populated via API -->
                                     </tbody>
@@ -116,11 +180,36 @@
                             </div>
                             <div class="card-body">
                                 <table class="table table-dark">
-                                    <thead><tr><th>Version</th><th>Status</th><th>Default</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Version</th>
+                                            <th>Status</th>
+                                            <th>Default</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="phpTable">
-                                        <tr><td>PHP 8.3</td><td><span class="badge bg-success">Installed</span></td><td><span class="badge bg-primary">Yes</span></td><td><button class="btn btn-sm btn-danger" disabled>Remove Default</button></td></tr>
-                                        <tr><td>PHP 8.2</td><td><span class="badge bg-secondary">Not Installed</span></td><td>-</td><td><button class="btn btn-sm btn-primary">Install</button></td></tr>
-                                        <tr><td>PHP 7.4</td><td><span class="badge bg-success">Installed</span></td><td></td><td><button class="btn btn-sm btn-outline-light me-1">Set Default</button><button class="btn btn-sm btn-danger">Remove</button></td></tr>
+                                        <tr>
+                                            <td>PHP 8.3</td>
+                                            <td><span class="badge bg-success">Installed</span></td>
+                                            <td><span class="badge bg-primary">Yes</span></td>
+                                            <td><button class="btn btn-sm btn-danger" disabled>Remove Default</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>PHP 8.2</td>
+                                            <td><span class="badge bg-secondary">Not Installed</span></td>
+                                            <td>-</td>
+                                            <td><button class="btn btn-sm btn-primary">Install</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>PHP 7.4</td>
+                                            <td><span class="badge bg-success">Installed</span></td>
+                                            <td></td>
+                                            <td><button class="btn btn-sm btn-outline-light me-1">Set
+                                                    Default</button><button
+                                                    class="btn btn-sm btn-danger">Remove</button></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -131,20 +220,35 @@
                     <div class="tab-pane fade" id="firewall">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between">
-                                <span>Firewall Rules <span id="fwStatusBadge" class="badge bg-secondary ms-2">Loading...</span></span>
+                                <span>Firewall Rules <span id="fwStatusBadge"
+                                        class="badge bg-secondary ms-2">Loading...</span></span>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-info me-2 d-none" id="fwInstallUfwBtn" onclick="installFirewall('ufw')">Install UFW</button>
-                                    <button class="btn btn-sm btn-outline-secondary me-2 d-none" id="fwInstallNftBtn" onclick="installFirewall('nftables')">Install NFTables</button>
-                                    <button class="btn btn-sm btn-success me-2 d-none" id="fwEnableBtn" onclick="toggleFirewall('enable')">Enable</button>
-                                    <button class="btn btn-sm btn-danger me-2 d-none" id="fwDisableBtn" onclick="toggleFirewall('disable')">Disable</button>
+                                    <button class="btn btn-sm btn-outline-info me-2 d-none" id="fwInstallUfwBtn"
+                                        onclick="installFirewall('ufw')">Install UFW</button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2 d-none" id="fwInstallNftBtn"
+                                        onclick="installFirewall('nftables')">Install NFTables</button>
+                                    <button class="btn btn-sm btn-success me-2 d-none" id="fwEnableBtn"
+                                        onclick="toggleFirewall('enable')">Enable</button>
+                                    <button class="btn btn-sm btn-danger me-2 d-none" id="fwDisableBtn"
+                                        onclick="toggleFirewall('disable')">Disable</button>
                                     <button class="btn btn-sm btn-primary">Add Rule</button>
                                 </div>
                             </div>
                             <div class="card-body">
                                 <table class="table table-dark">
-                                    <thead><tr><th>Port / Protocol</th><th>Action</th><th>Description / Source</th><th>Sync Status</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Port / Protocol</th>
+                                            <th>Action</th>
+                                            <th>Description / Source</th>
+                                            <th>Sync Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="fwTable">
-                                        <tr><td colspan="3">Loading firewall rules...</td></tr>
+                                        <tr>
+                                            <td colspan="3">Loading firewall rules...</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -159,9 +263,20 @@
                             </div>
                             <div class="card-body table-responsive">
                                 <table class="table table-dark table-hover">
-                                    <thead><tr><th>Database Name</th><th>Assigned User</th><th>Size / Quota</th><th>Host</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Database Name</th>
+                                            <th>Assigned User</th>
+                                            <th>Size / Quota</th>
+                                            <th>Host</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="mysqlTable">
-                                        <tr><td colspan="5" class="text-center text-muted">No databases found on system.</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No databases found on system.
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -172,9 +287,20 @@
                             </div>
                             <div class="card-body table-responsive">
                                 <table class="table table-dark table-hover">
-                                    <thead><tr><th>Database Name</th><th>Assigned User</th><th>Size</th><th>Host</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Database Name</th>
+                                            <th>Assigned User</th>
+                                            <th>Size</th>
+                                            <th>Host</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="pgTable">
-                                        <tr><td colspan="5" class="text-center text-muted">PostgreSQL module disabled or not installed.</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">PostgreSQL module disabled or
+                                                not installed.</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -189,9 +315,20 @@
                             </div>
                             <div class="card-body table-responsive">
                                 <table class="table table-dark table-hover">
-                                    <thead><tr><th>Email Address</th><th>Assigned User</th><th>Domain</th><th>Quota Usage</th><th>Actions</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Email Address</th>
+                                            <th>Assigned User</th>
+                                            <th>Domain</th>
+                                            <th>Quota Usage</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="mailTable">
-                                        <tr><td colspan="5" class="text-center text-muted">No mailboxes found on system.</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No mailboxes found on system.
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -204,17 +341,26 @@
                         <div class="row">
                             <!-- Left Sub-menu column -->
                             <div class="col-md-3 border-end border-secondary">
-                                <ul class="nav flex-column nav-pills" id="dns-submenu" role="tablist" aria-orientation="vertical">
-                                    <li class="nav-item"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">DNS</span></li>
-                                    <li class="nav-item"><a class="nav-link" href="#dns-wizard" data-bs-toggle="pill">DNS-Wizard</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#dns-add-zone" data-bs-toggle="pill">Add DNS-Zone</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#dns-zone-import" data-bs-toggle="pill">Zone-File Import</a></li>
-                                    <li class="nav-item"><a class="nav-link active" href="#dns-templates" data-bs-toggle="pill">Templates</a></li>
-                                    <li class="nav-item mt-3"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">Secondary DNS</span></li>
-                                    <li class="nav-item"><a class="nav-link" href="#dns-secondary-zones" data-bs-toggle="pill">Secondary DNS-Zones</a></li>
+                                <ul class="nav flex-column nav-pills" id="dns-submenu" role="tablist"
+                                    aria-orientation="vertical">
+                                    <li class="nav-item"><span
+                                            class="text-secondary fw-bold px-3 py-2 d-block bg-dark">DNS</span></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-wizard"
+                                            data-bs-toggle="pill">DNS-Wizard</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-add-zone"
+                                            data-bs-toggle="pill">Add DNS-Zone</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-zone-import"
+                                            data-bs-toggle="pill">Zone-File Import</a></li>
+                                    <li class="nav-item"><a class="nav-link active" href="#dns-templates"
+                                            data-bs-toggle="pill">Templates</a></li>
+                                    <li class="nav-item mt-3"><span
+                                            class="text-secondary fw-bold px-3 py-2 d-block bg-dark">Secondary
+                                            DNS</span></li>
+                                    <li class="nav-item"><a class="nav-link" href="#dns-secondary-zones"
+                                            data-bs-toggle="pill">Secondary DNS-Zones</a></li>
                                 </ul>
                             </div>
-                            
+
                             <!-- Right Main Content column -->
                             <div class="col-md-9 tab-content">
                                 <!-- Templates Panel -->
@@ -227,28 +373,59 @@
                                         <div class="card-body px-0">
                                             <form id="dnsTemplateForm">
                                                 <div class="row mb-3 align-items-center">
-                                                    <label class="col-sm-2 col-form-label text-end text-light">Name:</label>
+                                                    <label
+                                                        class="col-sm-2 col-form-label text-end text-light">Name:</label>
                                                     <div class="col-sm-10">
-                                                        <input type="text" class="form-control bg-dark border-secondary text-white" id="dnsTemplateName" value="Default+IPv6">
+                                                        <input type="text"
+                                                            class="form-control bg-dark border-secondary text-white"
+                                                            id="dnsTemplateName" value="Default+IPv6">
                                                     </div>
                                                 </div>
                                                 <div class="row mb-3 align-items-center">
-                                                    <label class="col-sm-2 col-form-label text-end text-light">Fields:</label>
+                                                    <label
+                                                        class="col-sm-2 col-form-label text-end text-light">Fields:</label>
                                                     <div class="col-sm-10 d-flex flex-wrap gap-3 text-light mt-1">
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDomain" checked><label class="form-check-label" for="fieldDomain">Domain</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldIP" checked><label class="form-check-label" for="fieldIP">IP Address</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldIPv6" checked><label class="form-check-label" for="fieldIPv6">IPv6 Address</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldNS1" checked><label class="form-check-label" for="fieldNS1">NS 1</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldNS2" checked><label class="form-check-label" for="fieldNS2">NS 2</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldEmail" checked><label class="form-check-label" for="fieldEmail">Email</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDKIM" checked><label class="form-check-label" for="fieldDKIM">DKIM</label></div>
-                                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="fieldDNSSEC" checked><label class="form-check-label" for="fieldDNSSEC">DNSSEC</label></div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldDomain" checked><label
+                                                                class="form-check-label"
+                                                                for="fieldDomain">Domain</label></div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldIP" checked><label
+                                                                class="form-check-label" for="fieldIP">IP
+                                                                Address</label></div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldIPv6" checked><label
+                                                                class="form-check-label" for="fieldIPv6">IPv6
+                                                                Address</label></div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldNS1" checked><label
+                                                                class="form-check-label" for="fieldNS1">NS 1</label>
+                                                        </div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldNS2" checked><label
+                                                                class="form-check-label" for="fieldNS2">NS 2</label>
+                                                        </div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldEmail" checked><label
+                                                                class="form-check-label" for="fieldEmail">Email</label>
+                                                        </div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldDKIM" checked><label
+                                                                class="form-check-label" for="fieldDKIM">DKIM</label>
+                                                        </div>
+                                                        <div class="form-check"><input class="form-check-input"
+                                                                type="checkbox" id="fieldDNSSEC" checked><label
+                                                                class="form-check-label"
+                                                                for="fieldDNSSEC">DNSSEC</label></div>
                                                     </div>
                                                 </div>
                                                 <div class="row mb-3">
-                                                    <label class="col-sm-2 col-form-label text-end text-light">Template:</label>
+                                                    <label
+                                                        class="col-sm-2 col-form-label text-end text-light">Template:</label>
                                                     <div class="col-sm-10">
-                                                        <textarea class="form-control bg-dark border-secondary text-white font-monospace" id="dnsTemplateBody" rows="12">
+                                                        <textarea
+                                                            class="form-control bg-dark border-secondary text-white font-monospace"
+                                                            id="dnsTemplateBody" rows="12">
 [ZONE]
 origin={DOMAIN}.
 ns={NS1}.
@@ -270,19 +447,24 @@ NS|{DOMAIN}.|{NS1}.|0|3600
 NS|{DOMAIN}.|{NS2}.|0|3600
 MX|{DOMAIN}.|mail.{DOMAIN}.|10|3600
 TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
-                                                        <small class="text-info mt-1 d-block">DNS Placeholder: {DOMAIN}, {IP}, {IPV6}, {NS1}, {NS2}, {EMAIL}</small>
+                                                        <small class="text-info mt-1 d-block">DNS Placeholder: {DOMAIN},
+                                                            {IP}, {IPV6}, {NS1}, {NS2}, {EMAIL}</small>
                                                     </div>
                                                 </div>
                                                 <div class="row mb-3 align-items-center">
-                                                    <label class="col-sm-2 col-form-label text-end text-light">Visible:</label>
+                                                    <label
+                                                        class="col-sm-2 col-form-label text-end text-light">Visible:</label>
                                                     <div class="col-sm-10">
-                                                        <input class="form-check-input ms-0" type="checkbox" id="dnsTemplateVisible" checked>
+                                                        <input class="form-check-input ms-0" type="checkbox"
+                                                            id="dnsTemplateVisible" checked>
                                                     </div>
                                                 </div>
                                                 <div class="row border-top border-secondary pt-3 mt-4">
                                                     <div class="col-sm-10 offset-sm-2 text-end">
-                                                        <button type="button" class="btn btn-success me-2" onclick="saveDNSTemplate()">Save</button>
-                                                        <button type="button" class="btn btn-light" onclick="alert('TODO: Implement DNS Template cancel/back event')">Cancel</button>
+                                                        <button type="button" class="btn btn-success me-2"
+                                                            onclick="saveDNSTemplate()">Save</button>
+                                                        <button type="button" class="btn btn-light"
+                                                            onclick="alert('TODO: Implement DNS Template cancel/back event')">Cancel</button>
                                                     </div>
                                                 </div>
                                             </form>
@@ -291,19 +473,23 @@ TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
                                 </div>
                                 <div class="tab-pane fade" id="dns-wizard">
                                     <h4 class="text-white mb-3">DNS Wizard</h4>
-                                    <div class="alert alert-info">TODO: Implement standard DNS domain wizard for creating bind9 zones automatically.</div>
+                                    <div class="alert alert-info">TODO: Implement standard DNS domain wizard for
+                                        creating bind9 zones automatically.</div>
                                 </div>
                                 <div class="tab-pane fade" id="dns-add-zone">
                                     <h4 class="text-white mb-3">Add DNS-Zone</h4>
-                                    <div class="alert alert-info">TODO: Implement Add raw DNS Zone for complex bind9 inputs.</div>
+                                    <div class="alert alert-info">TODO: Implement Add raw DNS Zone for complex bind9
+                                        inputs.</div>
                                 </div>
                                 <div class="tab-pane fade" id="dns-zone-import">
                                     <h4 class="text-white mb-3">Zone-File Import</h4>
-                                    <div class="alert alert-info">TODO: Implement Bind9 structured zone import form interface.</div>
+                                    <div class="alert alert-info">TODO: Implement Bind9 structured zone import form
+                                        interface.</div>
                                 </div>
                                 <div class="tab-pane fade" id="dns-secondary-zones">
                                     <h4 class="text-white mb-3">Secondary DNS-Zones</h4>
-                                    <div class="alert alert-info">TODO: Implement Secondary Slave zones configuration.</div>
+                                    <div class="alert alert-info">TODO: Implement Secondary Slave zones configuration.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -315,111 +501,185 @@ TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
                         <div class="row">
                             <!-- Left Sub-menu column -->
                             <div class="col-md-3 border-end border-secondary">
-                                <ul class="nav flex-column nav-pills" id="system-submenu" role="tablist" aria-orientation="vertical">
-                                    <li class="nav-item"><span class="text-secondary fw-bold px-3 py-2 d-block bg-dark">System</span></li>
-                                    <li class="nav-item"><a class="nav-link active" href="#server-config" data-bs-toggle="pill">Server Config</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#apt-manager" data-bs-toggle="pill">APT Packages</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#os-update" data-bs-toggle="pill">OS-Update</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#panel-update" data-bs-toggle="pill">Panel Update</a></li>
+                                <ul class="nav flex-column nav-pills" id="system-submenu" role="tablist"
+                                    aria-orientation="vertical">
+                                    <li class="nav-item"><span
+                                            class="text-secondary fw-bold px-3 py-2 d-block bg-dark">System</span></li>
+                                    <li class="nav-item"><a class="nav-link active" href="#server-config"
+                                            data-bs-toggle="pill">Server Config</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#apt-manager"
+                                            data-bs-toggle="pill">APT Packages</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#os-update"
+                                            data-bs-toggle="pill">OS-Update</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#panel-update"
+                                            data-bs-toggle="pill">Panel Update</a></li>
                                 </ul>
                             </div>
-                            
+
                             <!-- Right Main Content column -->
                             <div class="col-md-9 tab-content">
                                 <!-- Server Config Panel -->
                                 <div class="tab-pane fade show active" id="server-config">
                                     <h4 class="text-white mb-3">Server Config</h4>
-                                    
+
                                     <!-- Inner Tabs matching ISPConfig style -->
                                     <ul class="nav nav-tabs mb-3 border-secondary" id="serverConfigTabs" role="tablist">
-                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary active" id="sys-mail-tab" data-bs-toggle="tab" data-bs-target="#sys-mail" type="button" role="tab">Mail</button></li>
-                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-server-tab" data-bs-toggle="tab" data-bs-target="#sys-server" type="button" role="tab">Server</button></li>
-                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-web-tab" data-bs-toggle="tab" data-bs-target="#sys-web" type="button" role="tab">Web</button></li>
-                                        <li class="nav-item"><button class="nav-link bg-dark text-secondary border-secondary" id="sys-dns-tab" data-bs-toggle="tab" data-bs-target="#sys-dns" type="button" role="tab">DNS</button></li>
+                                        <li class="nav-item"><button
+                                                class="nav-link bg-dark text-secondary border-secondary active"
+                                                id="sys-mail-tab" data-bs-toggle="tab" data-bs-target="#sys-mail"
+                                                type="button" role="tab">Mail</button></li>
+                                        <li class="nav-item"><button
+                                                class="nav-link bg-dark text-secondary border-secondary"
+                                                id="sys-server-tab" data-bs-toggle="tab" data-bs-target="#sys-server"
+                                                type="button" role="tab">Server</button></li>
+                                        <li class="nav-item"><button
+                                                class="nav-link bg-dark text-secondary border-secondary"
+                                                id="sys-web-tab" data-bs-toggle="tab" data-bs-target="#sys-web"
+                                                type="button" role="tab">Web</button></li>
+                                        <li class="nav-item"><button
+                                                class="nav-link bg-dark text-secondary border-secondary"
+                                                id="sys-dns-tab" data-bs-toggle="tab" data-bs-target="#sys-dns"
+                                                type="button" role="tab">DNS</button></li>
                                     </ul>
-                                    
+
                                     <div class="tab-content" id="serverConfigTabsContent">
                                         <!-- Mail Config Block (from user screenshot) -->
                                         <div class="tab-pane fade show active" id="sys-mail" role="tabpanel">
                                             <div class="card bg-dark border-secondary p-3">
-                                                <div class="card-header bg-info text-dark border-bottom border-secondary px-3 py-2 fw-bold">
+                                                <div
+                                                    class="card-header bg-info text-dark border-bottom border-secondary px-3 py-2 fw-bold">
                                                     Configuration for system
                                                 </div>
                                                 <div class="card-body px-0 pt-4">
                                                     <form id="serverMailConfigForm">
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">Module:</label>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">Module:</label>
                                                             <div class="col-sm-9">
-                                                                <select class="form-select bg-dark border-secondary text-white"><option>postfix_mysql</option><option>postfix_sqlite</option></select>
+                                                                <select
+                                                                    class="form-select bg-dark border-secondary text-white">
+                                                                    <option>postfix_mysql</option>
+                                                                    <option>postfix_sqlite</option>
+                                                                </select>
                                                             </div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">Maildir Path:</label>
-                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/vmail/[domain]/[localpart]"></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">Maildir
+                                                                Path:</label>
+                                                            <div class="col-sm-9"><input type="text"
+                                                                    class="form-control bg-dark border-secondary text-white"
+                                                                    value="/var/vmail/[domain]/[localpart]"></div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">Maildir Format:</label>
-                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Maildir</option></select></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">Maildir
+                                                                Format:</label>
+                                                            <div class="col-sm-9"><select
+                                                                    class="form-select bg-dark border-secondary text-white">
+                                                                    <option>Maildir</option>
+                                                                </select></div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">Homedir Path:</label>
-                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/vmail"></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">Homedir
+                                                                Path:</label>
+                                                            <div class="col-sm-9"><input type="text"
+                                                                    class="form-control bg-dark border-secondary text-white"
+                                                                    value="/var/vmail"></div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">DKIM Path:</label>
-                                                            <div class="col-sm-9"><input type="text" class="form-control bg-dark border-secondary text-white" value="/var/lib/amavis/dkim"></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">DKIM
+                                                                Path:</label>
+                                                            <div class="col-sm-9"><input type="text"
+                                                                    class="form-control bg-dark border-secondary text-white"
+                                                                    value="/var/lib/amavis/dkim"></div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">POP3/IMAP Daemon:</label>
-                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Dovecot</option></select></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">POP3/IMAP
+                                                                Daemon:</label>
+                                                            <div class="col-sm-9"><select
+                                                                    class="form-select bg-dark border-secondary text-white">
+                                                                    <option>Dovecot</option>
+                                                                </select></div>
                                                         </div>
                                                         <div class="row mb-3 align-items-center">
-                                                            <label class="col-sm-3 col-form-label text-end text-light">Content Filter:</label>
-                                                            <div class="col-sm-9"><select class="form-select bg-dark border-secondary text-white"><option>Amavisd</option><option>Rspamd</option></select></div>
+                                                            <label
+                                                                class="col-sm-3 col-form-label text-end text-light">Content
+                                                                Filter:</label>
+                                                            <div class="col-sm-9"><select
+                                                                    class="form-select bg-dark border-secondary text-white">
+                                                                    <option>Amavisd</option>
+                                                                    <option>Rspamd</option>
+                                                                </select></div>
                                                         </div>
                                                         <div class="row border-top border-secondary pt-3 mt-4">
                                                             <div class="col-sm-9 offset-sm-3 text-end">
-                                                                <button type="button" class="btn btn-success me-2" onclick="saveServerConfig('mail')">Save</button>
+                                                                <button type="button" class="btn btn-success me-2"
+                                                                    onclick="saveServerConfig('mail')">Save</button>
                                                             </div>
                                                         </div>
                                                     </form>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="tab-pane fade" id="sys-server" role="tabpanel"><div class="alert alert-info">TODO: Main Server config attributes.</div></div>
-                                        <div class="tab-pane fade" id="sys-web" role="tabpanel"><div class="alert alert-info">TODO: Global Web / PHP / Nginx configurations.</div></div>
-                                        <div class="tab-pane fade" id="sys-dns" role="tabpanel"><div class="alert alert-info">TODO: Global Bind9 recursion/logging setup.</div></div>
+                                        <div class="tab-pane fade" id="sys-server" role="tabpanel">
+                                            <div class="alert alert-info">TODO: Main Server config attributes.</div>
+                                        </div>
+                                        <div class="tab-pane fade" id="sys-web" role="tabpanel">
+                                            <div class="alert alert-info">TODO: Global Web / PHP / Nginx configurations.
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="sys-dns" role="tabpanel">
+                                            <div class="alert alert-info">TODO: Global Bind9 recursion/logging setup.
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="apt-manager">
                                     <h4 class="text-white mb-3">APT Package Modules</h4>
                                     <div class="card bg-dark border-secondary p-3">
-                                        <p class="text-secondary">Execute low-level system package operations (async worker queue).</p>
+                                        <p class="text-secondary">Execute low-level system package operations (async
+                                            worker queue).</p>
                                         <div class="input-group mb-3">
-                                            <input type="text" id="aptPackageName" class="form-control bg-dark border-secondary text-white" placeholder="Package Name (e.g. htop, nano)">
-                                            <button class="btn btn-outline-success" type="button" onclick="execAPT('install')">Install</button>
-                                            <button class="btn btn-outline-danger" type="button" onclick="execAPT('remove')">Remove</button>
+                                            <input type="text" id="aptPackageName"
+                                                class="form-control bg-dark border-secondary text-white"
+                                                placeholder="Package Name (e.g. htop, nano)">
+                                            <button class="btn btn-outline-success" type="button"
+                                                onclick="execAPT('install')">Install</button>
+                                            <button class="btn btn-outline-danger" type="button"
+                                                onclick="execAPT('remove')">Remove</button>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="os-update">
                                     <h4 class="text-white mb-3">OS Update</h4>
                                     <div class="card bg-dark border-secondary p-3">
-                                        <button class="btn btn-lg btn-warning text-dark fw-bold w-100" onclick="execAPT('upgrade')">Trigger System APT Upgrade</button>
-                                        <small class="text-secondary mt-2 text-center">This command will push `apt-get upgrade -y` to the background worker.</small>
+                                        <button class="btn btn-lg btn-warning text-dark fw-bold w-100"
+                                            onclick="execAPT('upgrade')">Trigger System APT Upgrade</button>
+                                        <small class="text-secondary mt-2 text-center">This command will push `apt-get
+                                            upgrade -y` to the background worker.</small>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="panel-update">
                                     <h4 class="text-white mb-3">dashBoard2go Firmware Update</h4>
                                     <div class="card bg-dark border-secondary p-3">
-                                        <p class="text-secondary text-center">Trigger a live OTA fetch against GitHub.</p>
-                                        <button id="checkUpdateBtn" class="btn btn-lg btn-primary fw-bold w-100" onclick="checkForUpdates()">Check For Updates</button>
-                                        <div id="updateInfoDiv" class="d-none mt-4 p-3 border border-success rounded bg-black">
-                                            <h5 class="text-success"><i class="bi bi-rocket-takeoff-fill me-2"></i> Update Available: <span id="updateVersionText"></span></h5>
+                                        <p class="text-secondary text-center">Trigger a live OTA fetch against GitHub.
+                                        </p>
+                                        <button id="checkUpdateBtn" class="btn btn-lg btn-primary fw-bold w-100"
+                                            onclick="checkForUpdates()">Check For Updates</button>
+                                        <div id="updateInfoDiv"
+                                            class="d-none mt-4 p-3 border border-success rounded bg-black">
+                                            <h5 class="text-success"><i class="bi bi-rocket-takeoff-fill me-2"></i>
+                                                Update Available: <span id="updateVersionText"></span></h5>
                                             <p class="text-secondary mb-1" id="updateDateText"></p>
-                                            <pre class="bg-dark text-white-50 p-2 mt-2 mb-3"  id="updateBodyText"></pre>
-                                            <button id="installUpdateBtn" class="btn btn-lg btn-success fw-bold w-100" onclick="applyUpdate()">Download & Install Latest Core</button>
-                                            <small class="text-secondary mt-2 d-block text-center">This securely detaches the update process to prevent file-locks.</small>
+                                            <pre class="bg-dark text-white-50 p-2 mt-2 mb-3" id="updateBodyText"></pre>
+                                            <button id="installUpdateBtn" class="btn btn-lg btn-success fw-bold w-100"
+                                                onclick="applyUpdate()">Download & Install Latest Core</button>
+                                            <small class="text-secondary mt-2 d-block text-center">This securely
+                                                detaches the update process to prevent file-locks.</small>
                                         </div>
                                     </div>
                                 </div>
@@ -436,4 +696,5 @@ TXT|{DOMAIN}.|v=spf1 mx a ~all|0|3600</textarea>
     <script src="/js/core.js"></script>
     <script src="/js/admin.js"></script>
 </body>
+
 </html>

@@ -13,3 +13,24 @@ body { font-family: 'Poppins', sans-serif; background-color: var(--bs-body-bg); 
 
 #updateBodyText { font-size: 0.85rem; }
 #updateLogBox { width: 80%; max-width: 900px; height: 350px; }
+
+/* Custom styles for submenu behavior*/
+/* Keep parent highlighted while submenu is open */
+.submenu-wrapper:has(.collapse.show) > .submenu-toggle {
+    background-color: #0d6efd;
+    color: white;
+    opacity: 1;
+}
+/* Default state */
+.icon-fill {
+    display: none;
+}
+
+/* Active/open state */
+.submenu-wrapper:has(.collapse.show) .icon-outline {
+    display: none;
+}
+
+.submenu-wrapper:has(.collapse.show) .icon-fill {
+    display: inline-block;
+}
